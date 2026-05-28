@@ -25,7 +25,7 @@ Compared with the original LemonWoo specification:
 | Local preview/dev-server action | Done | Prompt intent can start/reuse/stop a local server and show a concrete URL. |
 | Release packaging and public guardrails | Done | DMG packaging, release checks, scope guard, public readiness, QA and troubleshooting docs are present. |
 | Live DeepSeek vertical slice | Gated / pending real key | `smoke:agent:live` exists and exits 78 with `SKIP: falta DEEPSEEK_API_KEY` when no key is available. Needs one real-key run before calling v1 fully proven. |
-| Tab autocomplete as editor feature | Not implemented as UI feature | Flash routing exists for `tab`/`inline-edit`, but no native inline completion provider or bundled Continue UI-free integration is wired yet. |
+| Tab autocomplete as editor feature | Done | Registered as native VS Code inline completion provider (`vscode.languages.registerInlineCompletionItemProvider`) using DeepSeek Flash, with full context limit checks, debounce/cancellation, and error safety. |
 | MCP, multi-agent, persistent memory, Stripe, OpenTelemetry, browser agents | Explicitly out of v1 | Guardrails enforce this scope. These remain v1.1+ roadmap only. |
 
 Current stage summary:
@@ -280,4 +280,30 @@ bash scripts/verify-public-readiness.sh
 bash scripts/verify-release-artifacts.sh
 pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
 pnpm release:check
+```
+
+## 2026-05-28 — Native Tab Completion
+
+- Implemented native `vscode.languages.registerInlineCompletionItemProvider` in `lemonwoo-ai` extension, registered on startup.
+- Integrated with DeepSeek Flash for high-speed autocomplete ghost text.
+- Reuses validated API key stored in `SecretStorage`.
+- Slices context safely (prefix 3000 chars, suffix 1500 chars).
+- Enforces size limit (< 1MB) and folder exclusions (`.git`, `node_modules`, `dist`, `build`, `out`).
+- Implemented real abort/debounce cancellation using `AbortController` and VS Code's `CancellationToken`.
+- Protects against key leakage by running `redactSecrets` on errors.
+- Added comprehensive unit and integration tests covering context slice, debounce/abort, secret redaction, and error safety.
+
+Executed checks:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm check:licenses
+pnpm smoke:bundle
+bash scripts/verify-v1-scope.sh
+bash scripts/verify-public-readiness.sh
+bash scripts/verify-release-artifacts.sh
+pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
 ```

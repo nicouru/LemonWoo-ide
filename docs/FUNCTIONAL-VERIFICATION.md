@@ -301,4 +301,23 @@ Evidence goals covered:
 - External-gated live smoke handling (`exit 78`) as expected skip when key is absent.
 - DMG artifact naming hardened to `LemonWoo-<version>-mac-<arch>.dmg` with `.sha256`.
 - Artifact verifier now checks app metadata, executable, prohibited references with allowlist, DMG integrity, and checksum consistency.
-- RC report generated at `docs/RC-REPORT.md` with git/artifact/check status.
+- RC report generated at `dist/RC-REPORT.md` with git/artifact/check status.
+
+## Native Tab Completion (2026-05-28)
+
+We verified the native Tab autocomplete functionality through automated testing and compliance runs.
+
+### Automated Tests
+The new tests in `extensions/lemonwoo-ai/test/inlineCompletion.test.ts` verify:
+1. **API Key Checks**: Autocomplete is disabled if no DeepSeek API key is present in `SecretStorage`.
+2. **Exclusion Boundaries**: Files inside `.git/`, `node_modules/`, `dist/`, `build/`, `out/` or larger than 1MB are ignored.
+3. **Context Limits**: Text context is limited to the last 3000 characters before the cursor and the first 1500 characters after the cursor.
+4. **Debounce & Cancellation**: Rapid typing aborts the previous request's `AbortSignal` to prevent lagging or editor blocking.
+5. **Secret Redaction**: Errors redact the API key.
+6. **Conversion**: Successful completions return a `vscode.InlineCompletionItem` with the expected ghost text.
+
+All workspace tests run and pass cleanly:
+```bash
+pnpm -r test
+```
+Result: `Test Files  5 passed (5) | Tests  40 passed (40)` for the extension suite.

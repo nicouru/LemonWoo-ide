@@ -104,3 +104,25 @@ Recorre el editor y los menús para confirmar que no se muestran característica
 - **Diff no aplica porque cambió el archivo**: debe mostrar error claro sin aplicar parcial.
 - **TestGate falla por dependencias no instaladas**: debe mostrar salida y habilitar corrección con agente.
 - **Live smoke sin key**: `pnpm smoke:agent:live` debe devolver `SKIP: falta DEEPSEEK_API_KEY` (exit 78).
+
+---
+
+## 8. Autocompletado Tab (Inline Completion)
+
+1. **Prueba básica de Autocompletado**:
+   - Con la API key de DeepSeek conectada, abre un archivo de código (por ejemplo, un archivo `.ts` o `.js`).
+   - Comienza a escribir una estructura común, por ejemplo:
+     ```typescript
+     function calculateDiscount(price, discountPercentage) {
+     ```
+   - Presiona Enter o haz una pequeña pausa.
+   - Confirma que aparece una sugerencia en texto gris ("ghost text") con el cuerpo de la función.
+   - Presiona la tecla `Tab` para aceptar la sugerencia. El texto debe insertarse en el editor.
+2. **Prueba de Cancelación y Debounce**:
+   - Comienza a escribir código de forma rápida y continua.
+   - El editor no debe trabarse ni congelarse. Debido al debounce de 300ms, las llamadas de autocompletado no se realizarán a la red si sigues tecleando continuamente. Al dejar de teclear, se esperarán 300ms antes de disparar la petición, cancelando cualquier llamada en curso mediante `AbortController`.
+3. **Prueba Sin Conexión / Sin Key**:
+   - Desconecta la API key (haz clic en `Desconectar` o borra la clave).
+   - Abre un archivo de código y escribe. No debe aparecer ninguna sugerencia ni realizarse ninguna llamada a la red.
+4. **Prueba de Exclusión**:
+   - Confirma que no se generan sugerencias de autocompletado en archivos ubicados dentro de directorios excluidos (como `node_modules/`, `.git/` o `dist/`), ni en archivos gigantescos mayores a 1MB.
