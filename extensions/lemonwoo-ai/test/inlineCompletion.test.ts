@@ -384,7 +384,7 @@ describe("Inline Completion Provider", () => {
 
     // Trigger request
     const p1 = providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
-    
+
     // Wait a tiny bit for secrets.get to resolve and debounce phase to start
     await new Promise((r) => setTimeout(r, 10));
 

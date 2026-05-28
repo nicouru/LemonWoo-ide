@@ -126,4 +126,3 @@ Recorre el editor y los menús para confirmar que no se muestran característica
    - Abre un archivo de código y escribe. No debe aparecer ninguna sugerencia ni realizarse ninguna llamada a la red.
 4. **Prueba de Exclusión**:
    - Confirma que no se generan sugerencias de autocompletado en archivos ubicados dentro de directorios excluidos (como `node_modules/`, `.git/` o `dist/`), ni en archivos gigantescos mayores a 1MB.
-

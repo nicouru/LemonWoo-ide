@@ -277,4 +277,3 @@ bash scripts/verify-public-readiness.sh
 bash scripts/verify-release-artifacts.sh
 pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
 ```
-
