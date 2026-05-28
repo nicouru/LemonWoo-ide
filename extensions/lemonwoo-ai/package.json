@@ -25,12 +25,17 @@
     ]
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@lemonwoo/agent-runtime": "workspace:*",
+    "@lemonwoo/deepseek": "workspace:*",
+    "@lemonwoo/test-gate": "workspace:*"
+  },
   "devDependencies": {
-    "@types/vscode": "^1.95.0"
+    "@types/vscode": "^1.95.0",
+    "esbuild": "^0.25.9"
   }
 }

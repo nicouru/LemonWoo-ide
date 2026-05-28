@@ -128,3 +128,38 @@ process: dist/LemonWoo.app/Contents/MacOS/LemonWoo
 user-data-dir: ~/Library/Application Support/LemonWoo
 front window: LemonWoo Agent
 ```
+
+## 2026-05-28 — Agent programming loop v1
+
+- Implemented internal agent runtime fallback in `@lemonwoo/agent-runtime`:
+  - `runAgentTask` / `runAgentTaskOnce` with phase events (`Pensando`, `Escribiendo`, `Verificando`).
+  - Uses `@lemonwoo/deepseek` `DeepSeekClient` + `buildMessages` (Pro for agent/verify/debug/refactor).
+  - OpenCode spike kept separate (`opencodeSpike.ts`); not required for the v1 loop.
+- Added multi-file unified diff support:
+  - `parseMultiFileDiff`, `planMultiFileApply`, safe path guards, all-or-nothing apply planning.
+  - VS Code apply via `multiDiffApply.ts` (`WorkspaceEdit`, new file creation).
+- Wired extension to workspace packages (esbuild bundle):
+  - `agentContext.ts` gathers AGENTS.md, `.lemonwoo/rules`, git diff, diagnostics, repo tree, on-demand `rg`.
+  - `handleRun` uses `runAgentTask` instead of inline fetch chat.
+  - TestGate uses `@lemonwoo/test-gate` with touched files from last apply.
+  - **Corregir con agente** appears when TestGate fails and re-runs agent with test output.
+- Added fixture `fixtures/agent-loop-ts` (intentionally failing `sum` test).
+- Tests added/updated in `packages/agent-runtime/test/*` and `extensions/lemonwoo-ai/test/agent-loop.test.ts`.
+
+Executed checks:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm smoke:bundle
+pnpm release:check
+```
+
+Result (2026-05-28):
+
+- 98 tests passed across workspace (`deepseek` 61, `lemonwoo-ai` 26, `agent-runtime` 11).
+- `dist/LemonWoo.app` rebuilt and smoke-launched with `LemonWoo Agent` window.
+- `dist/LemonWoo-0.1.0-mac-arm64.dmg` packaged successfully.
+```

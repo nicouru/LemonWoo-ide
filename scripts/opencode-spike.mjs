@@ -1,4 +1,4 @@
-import { runOpenCodeSpike } from "../packages/agent-runtime/dist/index.js";
+import { runOpenCodeSpike } from "../packages/agent-runtime/dist/opencodeSpike.js";
 
 const result = await runOpenCodeSpike();
 if (!result.ok) {
