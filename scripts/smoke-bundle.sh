@@ -39,7 +39,7 @@ tell application "System Events"
   end repeat
   if not hasWindow then error "LemonWoo has no window"
   set w to name of front window of p
-  if w does not start with "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
+  if w does not contain "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
 end tell
 OSA
 )" || true

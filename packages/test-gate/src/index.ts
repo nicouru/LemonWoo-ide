@@ -24,7 +24,7 @@ export function decideTestGate(repoPath: string, changedFiles: string[]): TestGa
   if (usesTs && scripts.lint) commands.push("lint");
   if (usesTs && scripts.typecheck) commands.push("typecheck");
   if (touchesUi && scripts["test:e2e"]) commands.push("test:e2e");
-  if (commands.length === 0 && scripts.test) commands.push("test");
+  if (scripts.test) commands.push("test");
 
   const manager: TestGateDecision["packageManager"] = existsSync(join(repoPath, "pnpm-lock.yaml"))
     ? "pnpm"

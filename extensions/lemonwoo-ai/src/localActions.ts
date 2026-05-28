@@ -36,7 +36,7 @@ const PREVIEW_PATTERNS = [
   /servidor\s+local/i,
   /quiero\s+ver\s+la\s+p[aá]gina/i,
   /abr[ií]\s+preview/i,
-  /localhost/i,
+  /iniciar\s+localhost/i,
   /url\s+local/i,
   /ver\s+web/i,
   /abrila?\s+en\s+el\s+navegador/i
@@ -117,7 +117,12 @@ export async function ensurePreviewServer(
   logs: string[];
 }> {
   const existing = runningServers.get(workspace);
-  if (existing && existing.process.pid && !existing.process.killed) {
+  if (
+    existing &&
+    existing.process.pid &&
+    existing.process.exitCode == null &&
+    existing.process.signalCode == null
+  ) {
     return { reused: true, url: existing.url ?? "http://localhost:3000", logs: tail(existing.logs, 10) };
   }
 
@@ -134,12 +139,19 @@ export async function ensurePreviewServer(
   const server: RunningServer = { workspace, process: child, logs, commandPreview };
   runningServers.set(workspace, server);
 
-  const url = await waitForServerUrl(child, logs, port, opts?.startupTimeoutMs ?? 30_000);
-  server.url = url;
   child.on("exit", () => {
     runningServers.delete(workspace);
   });
-  return { reused: false, url, logs: tail(logs, 10) };
+
+  try {
+    const url = await waitForServerUrl(child, logs, port, opts?.startupTimeoutMs ?? 30_000);
+    server.url = url;
+    return { reused: false, url, logs: tail(logs, 10) };
+  } catch (error) {
+    child.kill("SIGTERM");
+    runningServers.delete(workspace);
+    throw error;
+  }
 }
 
 export function stopPreviewServer(workspace: string): boolean {
@@ -156,7 +168,8 @@ export function stopAllPreviewServers(): void {
 }
 
 export function parseUrlFromOutput(chunk: string): string | null {
-  const m = chunk.match(URL_RE);
+  const clean = chunk.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
+  const m = clean.match(URL_RE);
   return m?.[1] ?? null;
 }
 
@@ -197,7 +210,7 @@ async function waitForServerUrl(
       }
     });
     const timer = setTimeout(async () => {
-      const maybeUp = await isPortOpen(fallbackPort);
+      const maybeUp = await isPortOccupied(fallbackPort);
       if (maybeUp) return finish(undefined, `http://localhost:${fallbackPort}`);
       finish(new Error(`Timeout iniciando servidor (${Math.round(timeoutMs / 1000)}s). Logs: ${tail(logs, 10).join("\n")}`));
     }, timeoutMs);
@@ -207,13 +220,13 @@ async function waitForServerUrl(
 async function findOpenPort(start: number): Promise<number> {
   let port = start;
   for (let i = 0; i < 10; i += 1) {
-    if (!(await isPortOpen(port))) return port;
+    if (!(await isPortOccupied(port))) return port;
     port += 1;
   }
   return start;
 }
 
-async function isPortOpen(port: number): Promise<boolean> {
+async function isPortOccupied(port: number): Promise<boolean> {
   return await new Promise((resolve) => {
     const srv = createServer();
     srv.once("error", () => resolve(true));

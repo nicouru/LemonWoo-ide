@@ -134,19 +134,29 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
 
 function isWelcomeTab(tab: vscode.Tab): boolean {
   const input = tab.input;
-  if (input && typeof input === "object" && "uri" in input && (input as any).uri?.scheme === "file") {
-    return false;
+  if (input && typeof input === "object" && "uri" in input) {
+    const scheme = (input as any).uri?.scheme;
+    if (
+      scheme === "file" ||
+      scheme === "vscode-remote" ||
+      scheme === "vscode-vfs" ||
+      scheme === "git" ||
+      scheme === "gitlens" ||
+      scheme === "untitled"
+    ) {
+      return false;
+    }
   }
   const label = tab.label.toLowerCase();
-  if (label.includes("welcome")) {
-    return true;
-  }
   if (input instanceof vscode.TabInputText) {
     const value = `${input.uri.scheme}:${input.uri.path}`.toLowerCase();
     return value.includes("walkthrough") || value.includes("getting-started") || value.includes("welcome");
   }
   if (input instanceof vscode.TabInputWebview) {
     return input.viewType.toLowerCase().includes("welcome") || input.viewType.toLowerCase().includes("gettingstarted");
+  }
+  if (label.includes("welcome")) {
+    return true;
   }
   return false;
 }
@@ -260,6 +270,9 @@ async function runAgentCycle(
   const signal = activeAbort.signal;
 
   lastTestFailed = false;
+  lastAgentText = "";
+  lastRawDiff = null;
+  lastTouchedFiles = [];
   panel.webview.postMessage({ type: "fixAgent", show: false });
 
   if (!fixTestOutput) {
@@ -313,7 +326,12 @@ async function runAgentCycle(
     }
     panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
   } catch (error) {
-    if (error instanceof DeepSeekAbortError) {
+    const errText = String(error);
+    if (
+      error instanceof DeepSeekAbortError ||
+      errText.includes("AbortError") ||
+      errText.includes("aborted")
+    ) {
       panel.webview.postMessage({ type: "error", text: "Tarea cancelada." });
     } else if (error instanceof DeepSeekAuthError) {
       panel.webview.postMessage({ type: "needKey" });
@@ -323,7 +341,7 @@ async function runAgentCycle(
     } else if (error instanceof DeepSeekNetworkError) {
       panel.webview.postMessage({ type: "error", text: "Sin red o DeepSeek no disponible." });
     } else {
-      panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
+      panel.webview.postMessage({ type: "error", text: redactSecrets(errText) });
     }
     panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
   } finally {
