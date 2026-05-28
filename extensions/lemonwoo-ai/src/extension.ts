@@ -18,6 +18,7 @@ import {
 import { gatherAgentContext } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
+import { registerInlineCompletionProvider } from "./inlineCompletion.js";
 
 const KEY_NAME = "deepseek.apiKey";
 const VIEW_TYPE = "lemonwoo.agentView";
@@ -40,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
     await openAgentPanel(context);
   });
   context.subscriptions.push(openAgent);
+  context.subscriptions.push(registerInlineCompletionProvider(context));
   void openAgentPanel(context);
 }
 
