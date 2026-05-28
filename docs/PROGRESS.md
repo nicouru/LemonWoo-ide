@@ -36,6 +36,29 @@ Current stage summary:
 - **Public/release docs:** ready.
 - **Next decision:** run `pnpm rc:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available, then decide whether to tag the first public v1 RC.
 
+## 2026-05-28 — Document consistency guardrail (v1 RC hardening)
+
+- Added automated document consistency guardrail (`scripts/verify-docs-current.mjs`) to scan for obsolete references, outdated features, or local paths.
+- Exposed check via npm script `verify:docs`.
+- Integrated `verify:docs` into the release candidate validation pipeline (`scripts/rc-check.sh`) right after the public readiness check.
+- Documented the verification command in `README.md` and updated pre-publication checklist in `docs/PUBLIC-RELEASE-CHECKLIST.md`.
+
+## 2026-05-28 — First-run agent surface polish
+
+- Startup prioritizes LemonWoo Agent as the primary surface and safely closes Welcome-only tabs (without closing dirty or pinned user tabs).
+- Webview first-focus was polished:
+  - no key -> autofocus on DeepSeek API key input,
+  - key present -> autofocus on the agent prompt box.
+- Added extension manifest tests to lock this behavior (startup surface and autofocus contracts).
+
+## 2026-05-28 — First-run agent surface polish
+
+- Startup now prioritizes LemonWoo Agent as the primary surface and safely closes Welcome-only tabs (without closing dirty or pinned user tabs).
+- Webview first-focus was polished:
+  - no key -> autofocus on DeepSeek API key input,
+  - key present -> autofocus on the agent prompt box.
+- Added extension manifest tests to lock this behavior (startup surface and autofocus contracts).
+
 Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
 
 ## 2026-05-28 — RC distribution hardening
