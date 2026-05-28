@@ -40,7 +40,7 @@ pnpm release:check
 - [ ] Empaquetar el DMG: `pnpm package:dmg`
 - [ ] Confirmar checksum generado: `dist/LemonWoo-<version>-mac-<arch>.dmg.sha256`
 - [ ] Auditar los artefactos construidos: `bash scripts/verify-release-artifacts.sh`
-- [ ] Probar la apertura inicial del DMG simulando un sistema limpio (usando la guía de [QA-MANUAL-ES.md](file:///Users/lskjdnf02387f4bf/Developer/Lemonwoo2/docs/QA-MANUAL-ES.md)).
+- [ ] Probar la apertura inicial del DMG simulando un sistema limpio (usando la guía de [QA-MANUAL-ES.md](QA-MANUAL-ES.md)).
 
 ---
 
@@ -69,7 +69,7 @@ pnpm release:check
 
 ## 7. Hallazgos de Auditoría (Audit Findings)
 Durante la preparación del release público v1, se identificaron las siguientes referencias a términos fuera de alcance en archivos activos que no debían ser editados para evitar pisar el trabajo de Cursor:
-- **Archivo**: [packages/deepseek/src/client.ts](file:///Users/lskjdnf02387f4bf/Developer/Lemonwoo2/packages/deepseek/src/client.ts) (Líneas 17-18)
+- **Archivo**: [packages/deepseek/src/client.ts](../packages/deepseek/src/client.ts) (Líneas 17-18)
   - *Referencia:* Contiene comentarios explicativos indicando que se excluyen de v1 la compatibilidad con el endpoint de Anthropic y FIM beta.
   - *Resolución:* No representan código ejecutable ni configuraciones activas, por lo que son permitidas y se encuentran filtradas de forma segura en `verify-v1-scope.sh`.
 

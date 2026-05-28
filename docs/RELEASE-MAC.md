@@ -22,7 +22,7 @@ To generate a reproducible RC report with git/artifact/check metadata, run:
 pnpm rc:report
 ```
 
-`pnpm rc:report` writes `dist/RC-REPORT.md` (local artifact).  
+`pnpm rc:report` writes `dist/RC-REPORT.md` (local artifact).
 `docs/RC-REPORT.md` remains a stable public template.
 
 ## Command behavior details
