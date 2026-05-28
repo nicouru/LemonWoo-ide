@@ -85,6 +85,36 @@ Usá el fixture del repo para validar el flujo completo sin depender de un proye
 
 ---
 
+## 3c. Loop v2 multi-archivo con reparación
+
+Usá este fixture para validar la parte nueva de v2.0: el agente debe inspeccionar, buscar, proponer un patch multi-archivo, verificar y reparar si queda un fallo.
+
+1. **Preparar workspace**
+   - En LemonWoo: `Archivo` → `Abrir carpeta...` → elegí `fixtures/v2-multi-file-agent`.
+2. **Confirmar estado inicial**
+   - En terminal, desde ese fixture, corré `npm test`.
+   - Debe fallar antes de aplicar cambios.
+3. **Pedir reparación**
+   - Prompt sugerido: `Arreglá los tests de este repo con el menor patch posible. Inspeccioná los archivos necesarios, proponé diff, verificá y corregí si falla.`
+4. **Aplicar diff**
+   - Esperá un único bloque `diff`.
+   - Clic en **Aplicar diff**.
+   - El primer patch esperado puede tocar más de un archivo.
+5. **Verificar**
+   - Clic en **Verificar**.
+   - Si TestGate queda rojo, usá **Corregir con agente**.
+6. **Cross-check terminal**
+   - Corré `npm test` en el fixture abierto.
+   - Debe terminar verde.
+7. **Automatizado sin key**
+   ```bash
+   pnpm -r build
+   pnpm v2:gauntlet
+   ```
+   Este comando usa respuestas mockeadas y una copia temporal del fixture. No consume DeepSeek y no modifica el fixture original.
+
+---
+
 ## 4. Servidor de Vista Previa (Local Preview Server)
 
 1. **Levantar Preview**:

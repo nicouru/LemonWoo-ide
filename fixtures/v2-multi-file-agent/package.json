@@ -1,0 +1,9 @@
+{
+  "name": "v2-multi-file-agent-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
+

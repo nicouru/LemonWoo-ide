@@ -19,6 +19,45 @@ Automated coverage (`packages/agent-runtime/test/runAgentLoop.test.ts`, `tools.t
 - Runtime does not write to disk; apply remains extension-only.
 - Extension wires `buildAgentAdapters` and summarizes tool events in the existing stream (no tool console UI).
 
+## v2.0 functional dogfood gauntlet (2026-05-28)
+
+Fixture:
+
+- `fixtures/v2-multi-file-agent`
+
+Command evidence:
+
+```bash
+pnpm -r build
+pnpm v2:gauntlet
+```
+
+Result:
+
+```text
+V2 functional gauntlet passed.
+First pass touched: src/invoice.js, src/tax.js
+Repair pass touched: src/format.js
+Final commands: test
+```
+
+What this proves:
+
+- The seeded fixture starts red with `npm test`.
+- The runtime performs a bounded multi-step pass using internal `search`, `read_file`, `test_gate`, and `propose_diff` tools.
+- The runtime proposes but does not apply patches.
+- The external apply path applies the first multi-file diff on a temp workspace.
+- TestGate remains red after the first patch, so failure output is reinjected through the repair path.
+- The repair pass proposes a second diff and final TestGate is green.
+- The source fixture remains seeded red after the gauntlet, proving the automated run mutates only a temp copy.
+
+Remaining manual confirmation:
+
+- Open `fixtures/v2-multi-file-agent` in `LemonWoo.app` with the existing DeepSeek key in SecretStorage.
+- Ask the same task from `fixtures/v2-multi-file-agent/TASK.md`.
+- Apply diff, run **Verificar**, and use **Corregir con agente** if TestGate is red.
+- Cross-check the opened fixture from the terminal with `npm test`.
+
 ## v1 final RC validation run (2026-05-28, main @ 7257be0)
 
 | Check | Result |

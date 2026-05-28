@@ -15,6 +15,7 @@
     "verify:docs": "node scripts/verify-docs-current.mjs",
     "smoke:bundle": "bash scripts/smoke-bundle.sh",
     "smoke:agent:live": "node scripts/live-agent-smoke.mjs",
+    "v2:gauntlet": "node scripts/v2-functional-gauntlet.mjs",
     "build:mac": "bash apps/desktop/build-mac.sh",
     "package:dmg": "bash scripts/package-dmg.sh",
     "release:check": "bash scripts/release-check.sh",
