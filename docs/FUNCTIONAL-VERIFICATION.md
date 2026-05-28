@@ -55,7 +55,7 @@ CLI live smoke on the same machine without `DEEPSEEK_API_KEY` in the shell:
 | --- | --- |
 | `pnpm smoke:agent:live` | **SKIP exit 78** — expected; key lives in-app only |
 
-Maintainer spot-check (this git clone, after dogfood): tracked `fixtures/agent-loop-ts/src/sum.ts` was still the seeded bug and `npm test` was red. Treat the table above as an in-app operator attestation, not as terminal-cross-verified evidence for this exact tracked fixture path. Before pushing the RC tag, either accept that manual attestation explicitly or re-run the in-app flow while cross-verifying file mutation and tests from the terminal.
+Maintainer spot-check (this git clone, after dogfood): tracked `fixtures/agent-loop-ts/src/sum.ts` was still the seeded bug and `npm test` was red. Treat the table above as an in-app operator attestation, not as terminal-cross-verified evidence for this exact tracked fixture path. Tag **`v0.1.0-rc.1`** is already published; either accept that manual attestation explicitly or re-run the in-app flow while cross-verifying file mutation and tests from the terminal.
 
 ## v1 live beta closeout (2026-05-28)
 

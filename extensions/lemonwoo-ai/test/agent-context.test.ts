@@ -25,4 +25,11 @@ describe("agentContext", () => {
     expect(src).toContain("editorSnapshot ?? editorToSnapshot(editor, workspace)");
     expect(src).not.toMatch(/vscode\.window\.activeTextEditor/);
   });
+
+  it("runRg passes -- before query to prevent rg option injection", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/agentContext.ts"), "utf8");
+    const runRgBlock = src.slice(src.indexOf("export async function runRg"));
+    expect(runRgBlock).toMatch(/"!out\/\*\*"\s*,\s*"\-\-"\s*,\s*query\s*,\s*"\."\s*\]/);
+    expect(runRgBlock).toContain('shell: false');
+  });
 });

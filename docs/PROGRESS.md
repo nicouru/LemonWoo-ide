@@ -10,7 +10,7 @@ LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Development focus is **v2.0 Agent Ru
 
 ## v1 RC — 2026-05-28
 
-LemonWoo is in **v1 RC ready for tag — in-app live dogfood PASS**.
+LemonWoo **v1 RC** is published as tag **`v0.1.0-rc.1`**; in-app live dogfood is **PASS** (operator attestation).
 
 Automated matrix on `main` @ `1f864b4` (PR #15 merged): `pnpm -r test`, `pnpm rc:check`, `pnpm release:check`, `smoke:bundle`, and release artifacts are **PASS**.
 
