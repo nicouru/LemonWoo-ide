@@ -67,6 +67,10 @@ for i in "${!NAMES[@]}"; do
   # Filter out documentation comments that are explaining exclusions in client.ts
   FILTERED_MATCHES=$(echo "$MATCHES" | grep -vE "(\*[[:space:]]+-?[[:space:]]*No[[:space:]]+(Anthropic|FIM|mcp|stripe))" || true)
 
+  # Filter out legitimate negative phrases (e.g. "no provider picker", "sin model picker", etc.)
+  NEG_REGEX="(^|[^a-zA-Z0-9_-])(no|sin)[[:space:]]+(provider[[:space:]]+picker|model[[:space:]]+picker|mcp|stripe|opentelemetry|multi-agent)([^a-zA-Z0-9_-]|$)"
+  FILTERED_MATCHES=$(echo "$FILTERED_MATCHES" | grep -ivE "$NEG_REGEX" || true)
+
   if [[ -n "$FILTERED_MATCHES" ]]; then
     echo "FAIL: Found prohibited scope reference '$NAME' (pattern: '$REGEX')"
     echo "$FILTERED_MATCHES" | while read -r line; do

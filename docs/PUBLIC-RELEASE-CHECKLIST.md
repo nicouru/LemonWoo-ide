@@ -7,7 +7,9 @@ Este documento sirve como la lista de verificación final antes de hacer públic
 ## 1. Estado Actual Esperado y Ramas
 - [ ] La rama `main` debe contener la base de código estable y rebrandeada de VSCodium.
 - [ ] Todos los PRs activos de funcionalidades invasivas deben estar cerrados o aislados.
-- [ ] La rama de trabajo de Cursor (`feature/agent-programming-loop-v1`) debe ser fusionada a `main` únicamente tras pasar la suite completa de tests de integración y verificación funcional.
+- [ ] La rama de trabajo de Cursor (`feature/agent-programming-loop-v1`, PR #4) debe ser fusionada a `main` antes que este PR #5 (`feature/public-release-guardrails-v1`), ya que los guardrails de alcance (scope guards) deben validarse contra el estado combinado final.
+- [ ] Recordar que el PR #5 no toca el código funcional ni el runtime del agente.
+- [ ] Volver a ejecutar todos los scripts de guardrails y verificación de release en la rama combinada antes de publicar el release definitivo.
 
 ---
 

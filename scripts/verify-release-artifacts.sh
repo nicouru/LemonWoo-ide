@@ -7,7 +7,10 @@ cd "$ROOT"
 echo "=== Running Local Release Artifacts Audit ==="
 
 APP_PATH="dist/LemonWoo.app"
-DMG_FOUND=$(find dist -maxdepth 1 -name "LemonWoo-*-mac-arm64.dmg" | head -n 1)
+DMG_FOUND=""
+if [[ -d "dist" ]]; then
+  DMG_FOUND=$(find dist -maxdepth 1 -name "LemonWoo-*-mac-arm64.dmg" | head -n 1 || true)
+fi
 
 # Check if any artifacts exist
 if [[ ! -d "$APP_PATH" && -z "$DMG_FOUND" ]]; then
