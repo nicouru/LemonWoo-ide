@@ -59,8 +59,40 @@ PY
   fi
   set_plist_string "$MAIN_PLIST" "CFBundleExecutable" "$NAME_SHORT"
 
+  set_plist_string "$MAIN_PLIST" "CFBundleIconFile" "LemonWoo.icns"
+  set_plist_string "$MAIN_PLIST" "CFBundleIconName" "LemonWoo"
+  set_plist_string "$MAIN_PLIST" "CFBundleHelpBookFolder" "LemonWoo HelpBook"
+  set_plist_string "$MAIN_PLIST" "CFBundleHelpBookName" "LemonWoo HelpBook"
+  set_plist_string "$MAIN_PLIST" "NSHumanReadableCopyright" "Copyright (C) 2026 LemonWoo. All rights reserved"
+  set_plist_string "$MAIN_PLIST" "NSCameraUsageDescription" "An application in LemonWoo wants to use the Camera."
+  set_plist_string "$MAIN_PLIST" "NSMicrophoneUsageDescription" "An application in LemonWoo wants to use the Microphone."
+  set_plist_string "$MAIN_PLIST" "CFBundleTypeName" "LemonWoo document"
+
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $NAME_SHORT" "$MAIN_PLIST" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $URL_SCHEME" "$MAIN_PLIST" 2>/dev/null || true
+
+  /usr/bin/python3 - "$MAIN_PLIST" <<'PY'
+import sys, plistlib
+plist_path = sys.argv[1]
+with open(plist_path, "rb") as f:
+    data = plistlib.load(f)
+
+def rebrand_value(val):
+    if isinstance(val, str):
+        val = val.replace("VSCodium", "LemonWoo")
+        val = val.replace("vscodium", "lemonwoo")
+        val = val.replace("Visual Studio Code", "LemonWoo")
+        return val
+    elif isinstance(val, dict):
+        return {k: rebrand_value(v) for k, v in val.items()}
+    elif isinstance(val, list):
+        return [rebrand_value(v) for v in val]
+    return val
+
+data = rebrand_value(data)
+with open(plist_path, "wb") as f:
+    plistlib.dump(data, f)
+PY
 
   for helper_app in "$APP_PATH"/Contents/Frameworks/VSCodium\ Helper*.app; do
     [[ -d "$helper_app" ]] || continue
@@ -82,9 +114,40 @@ PY
     helper_plist="$helper_app/Contents/Info.plist"
     [[ -f "$helper_plist" ]] || continue
     helper_name="${new_app_name%.app}"
-    set_plist_string "$helper_plist" "CFBundleIdentifier" "$BUNDLE_ID.helper"
+    helper_suffix=".helper"
+    if [[ "$helper_name" == *"Helper (GPU)"* ]]; then
+      helper_suffix=".helper.GPU"
+    elif [[ "$helper_name" == *"Helper (Plugin)"* ]]; then
+      helper_suffix=".helper.Plugin"
+    elif [[ "$helper_name" == *"Helper (Renderer)"* ]]; then
+      helper_suffix=".helper.Renderer"
+    fi
+    set_plist_string "$helper_plist" "CFBundleIdentifier" "$BUNDLE_ID$helper_suffix"
     set_plist_string "$helper_plist" "CFBundleName" "$helper_name"
     set_plist_string "$helper_plist" "CFBundleDisplayName" "$helper_name"
     set_plist_string "$helper_plist" "CFBundleExecutable" "$helper_name"
+
+    /usr/bin/python3 - "$helper_plist" <<'PY'
+import sys, plistlib
+plist_path = sys.argv[1]
+with open(plist_path, "rb") as f:
+    data = plistlib.load(f)
+
+def rebrand_value(val):
+    if isinstance(val, str):
+        val = val.replace("VSCodium", "LemonWoo")
+        val = val.replace("vscodium", "lemonwoo")
+        val = val.replace("Visual Studio Code", "LemonWoo")
+        return val
+    elif isinstance(val, dict):
+        return {k: rebrand_value(v) for k, v in val.items()}
+    elif isinstance(val, list):
+        return [rebrand_value(v) for v in val]
+    return val
+
+data = rebrand_value(data)
+with open(plist_path, "wb") as f:
+    plistlib.dump(data, f)
+PY
   done
 fi

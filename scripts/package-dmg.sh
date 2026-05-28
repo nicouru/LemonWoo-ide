@@ -67,7 +67,7 @@ hdiutil verify "$DMG_PATH"
 
 # 7. Generate checksum
 echo "Generating SHA256 checksum..."
-shasum -a 256 "$DMG_PATH" > "$SHA_PATH"
+(cd dist && shasum -a 256 "${DMG_NAME}" > "${DMG_NAME}.sha256")
 
 # 8. Print the final paths
 echo "DMG packaging successful!"

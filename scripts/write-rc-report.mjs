@@ -3,8 +3,9 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(new URL("..", import.meta.url).pathname);
+const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const reportPath = join(root, "dist", "RC-REPORT.md");
 const pkgPath = join(root, "package.json");
 const distDir = join(root, "dist");
@@ -34,11 +35,21 @@ const statusRaw = safeRun("git status --porcelain")
 const gitState = statusRaw ? "dirty" : "clean";
 const localDate = new Date().toLocaleString();
 
+const archRaw = process.arch;
+const arch = archRaw === "arm64" || archRaw === "aarch64" ? "arm64" : archRaw === "x64" ? "x64" : archRaw;
+const targetDmgName = `dist/LemonWoo-${pkg.version}-mac-${arch}.dmg`;
+
 const dmgCandidates = safeRun("ls -1 dist/LemonWoo-*-mac-*.dmg 2>/dev/null || true")
   .split("\n")
   .map((s) => s.trim())
   .filter(Boolean);
-const dmgPath = dmgCandidates.length > 0 ? dmgCandidates[dmgCandidates.length - 1] : "";
+
+let dmgPath = "";
+if (existsSync(join(root, targetDmgName))) {
+  dmgPath = targetDmgName;
+} else if (dmgCandidates.length > 0) {
+  dmgPath = dmgCandidates[dmgCandidates.length - 1];
+}
 
 let dmgSha256 = "";
 let dmgSha256File = "";
