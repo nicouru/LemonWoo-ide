@@ -26,8 +26,11 @@ This repository intentionally excludes v1.1 features (MCP Hub, multi-agent orche
 
 Still externally gated before calling v1 fully proven:
 
-- One live `pnpm rc:check` or `pnpm smoke:agent:live` run with a real `DEEPSEEK_API_KEY`.
+- `pnpm smoke:agent:live` with a real `DEEPSEEK_API_KEY` (Flash + Pro + agent-loop fixture).
+- Manual dogfood checklist in [docs/QA-MANUAL-ES.md](docs/QA-MANUAL-ES.md) §3b inside `LemonWoo.app`.
 - Apple Developer ID signing/notarization remains future work; v1 uses ad-hoc signing.
+
+Release candidate notes (tag pending live proof): [docs/RELEASE-NOTES-v0.1.0-rc.md](docs/RELEASE-NOTES-v0.1.0-rc.md).
 
 ## Release commands (v1 RC)
 
