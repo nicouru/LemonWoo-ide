@@ -1,7 +1,7 @@
 # Harness Evaluation — LemonWoo v2
 
-Date: 2026-05-28  
-Branch: `feature/v2-opencode-harness-reevaluation`  
+Date: 2026-05-28
+Branch: `feature/v2-opencode-harness-reevaluation`
 Decision lens: single LemonWoo Agent surface, one DeepSeek BYOK key, no model/provider picker, no visible MCP, no persistent memory product, no auto-apply, user never sees upstream branding.
 
 ## Summary

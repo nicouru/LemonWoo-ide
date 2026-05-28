@@ -17,6 +17,12 @@ describe("opencodeBinary", () => {
     expect(src).toContain("resolveOpencodeBinary");
     expect(src).toContain("prependOpencodeToPath");
   });
+
+  it("prefers an opencode command shim because the SDK spawns by command name", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/opencodeBinary.ts"), "utf8");
+    expect(src).toContain('const shimName = process.platform === "win32" ? "opencode.cmd" : "opencode"');
+    expect(src.indexOf("node_modules\", \".bin\", shimName")).toBeLessThan(src.indexOf("\"bin\", \"opencode.exe\""));
+  });
 });
 
 describe("opencodeConfig", () => {

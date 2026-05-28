@@ -38,7 +38,12 @@ function findOpencodeAiNativeBin(): string | undefined {
   try {
     const require = createRequire(import.meta.url);
     const pkgJson = require.resolve("opencode-ai/package.json");
-    const native = path.join(path.dirname(pkgJson), "bin", "opencode.exe");
+    const packageDir = path.dirname(pkgJson);
+    const shimName = process.platform === "win32" ? "opencode.cmd" : "opencode";
+    const shim = path.join(packageDir, "node_modules", ".bin", shimName);
+    if (isExecutable(shim)) return shim;
+
+    const native = path.join(packageDir, "bin", "opencode.exe");
     if (isExecutable(native)) return native;
   } catch {
     /* optional dependency not installed */
