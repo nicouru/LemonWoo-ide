@@ -15,21 +15,21 @@ try {
 }
 
 const forbiddenPatterns = [
-  { name: 'file:///Users', regex: /file:\/\/\/Users/g },
-  { name: '/Users/lskjdnf', regex: /\/Users\/lskjdnf/g },
-  { name: 'PR #4', regex: /PR #4/g },
-  { name: 'PR #5', regex: /PR #5/g },
-  { name: 'PR #6', regex: /PR #6/g },
-  { name: 'feature/agent-programming', regex: /feature\/agent-programming/g },
-  { name: 'Done in PR', regex: /Done in PR/g },
-  { name: 'merge PR', regex: /merge PR/g },
-  { name: 'mergeable', regex: /mergeable/g },
-  { name: '0bb7c42', regex: /0bb7c42/g },
-  { name: 'Partial pass', regex: /Partial pass/g },
-  { name: 'Continue integration', regex: /Continue integration/g },
-  { name: 'Open Agent Window', regex: /Open Agent Window/g },
-  { name: 'Start Preview', regex: /Start Preview/g },
-  { name: 'Stop Preview', regex: /Stop Preview/g },
+  { name: 'file:///Users', regex: /file:\/\/\/Users/ },
+  { name: '/Users/lskjdnf', regex: /\/Users\/lskjdnf/ },
+  { name: 'PR #4', regex: /PR #4/ },
+  { name: 'PR #5', regex: /PR #5/ },
+  { name: 'PR #6', regex: /PR #6/ },
+  { name: 'feature/agent-programming', regex: /feature\/agent-programming/ },
+  { name: 'Done in PR', regex: /Done in PR/ },
+  { name: 'merge PR', regex: /merge PR/ },
+  { name: 'mergeable', regex: /mergeable/ },
+  { name: '0bb7c42', regex: /0bb7c42/ },
+  { name: 'Partial pass', regex: /Partial pass/ },
+  { name: 'Continue integration', regex: /Continue integration/ },
+  { name: 'Open Agent Window', regex: /Open Agent Window/ },
+  { name: 'Start Preview', regex: /Start Preview/ },
+  { name: 'Stop Preview', regex: /Stop Preview/ },
 ];
 
 let failed = false;
