@@ -18,8 +18,34 @@ This file records command-level evidence for the required v1 vertical slice.
 | `pnpm smoke:bundle` | PASS (`LemonWoo Agent` window) |
 | `verify-release-artifacts` / `hdiutil verify` | PASS on `dist/LemonWoo-0.1.0-mac-arm64.dmg` |
 | `pnpm smoke:agent:live` | **SKIP exit 78** — `DEEPSEEK_API_KEY` not set in validation environment |
-| Manual dogfood in `LemonWoo.app` | **Pending** — requires operator + real key (see `docs/QA-MANUAL-ES.md` §3b) |
-| Git tag `v0.1.0-rc.1` | **Not created** — blocked on live PASS + manual dogfood |
+| Manual dogfood in `LemonWoo.app` | **PASS** (operator attestation 2026-05-28, key in SecretStorage only) |
+| Git tag `v0.1.0-rc.1` | **Pending** — operator confirmation before push (see release notes) |
+
+## In-app live dogfood (2026-05-28, main @ `1f864b4`)
+
+DeepSeek key configured **only inside LemonWoo.app** (SecretStorage). No key was read from Keychain, logs, or the shell.
+
+| Step | Operator result |
+| --- | --- |
+| LemonWoo Agent primary on launch | PASS |
+| Key already connected (no re-prompt) | PASS |
+| Agent prompt focused and usable | PASS |
+| Opened `fixtures/agent-loop-ts` | PASS |
+| Agent task + diff for `sum` fix | PASS |
+| Apply diff | PASS |
+| TestGate / verify after apply | PASS (in-app) |
+| Corregir con agente (if needed) | N/A (TestGate passed) |
+| Tab completion ghost text (`.ts`) | PASS |
+| Local preview URL + stop server | PASS |
+| Second task without stale diff | PASS |
+
+CLI live smoke on the same machine without `DEEPSEEK_API_KEY` in the shell:
+
+| Check | Result |
+| --- | --- |
+| `pnpm smoke:agent:live` | **SKIP exit 78** — expected; key lives in-app only |
+
+Maintainer spot-check (this git clone, after dogfood): tracked `fixtures/agent-loop-ts/src/sum.ts` was still the seeded bug and `npm test` was red. That does not invalidate in-app operator results; confirm the workspace path in LemonWoo matches the fixture you intend to ship, or re-apply once to align the repo copy if needed.
 
 ## v1 live beta closeout (2026-05-28)
 

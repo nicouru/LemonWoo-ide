@@ -2,15 +2,20 @@
 
 ## Current stage — 2026-05-28
 
-LemonWoo is in **v1 RC ready — live DeepSeek proof pending**.
+LemonWoo is in **v1 RC ready for tag — in-app live dogfood PASS**.
 
-Final validation on `main` @ `7257be0` (PR #14 merged): `pnpm -r test`, `pnpm rc:check`, `pnpm release:check`, `smoke:bundle`, and release artifacts are **PASS**. `pnpm smoke:agent:live` is **SKIP exit 78** in environments without `DEEPSEEK_API_KEY`. v1 is **not** declared fully closed until one real-key live smoke PASS and manual dogfood in `LemonWoo.app` are recorded.
+Automated matrix on `main` @ `1f864b4` (PR #15 merged): `pnpm -r test`, `pnpm rc:check`, `pnpm release:check`, `smoke:bundle`, and release artifacts are **PASS**.
 
-Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0-rc.md). Tag `v0.1.0-rc.1` is **pending** (see release notes).
+Live proof split:
+
+- **CLI** `pnpm smoke:agent:live`: **SKIP exit 78** when `DEEPSEEK_API_KEY` is not in the shell (key configured only in LemonWoo.app SecretStorage).
+- **In-app dogfood** (2026-05-28): operator attestation **PASS** for agent loop, TestGate, Tab completion, preview, and second-task isolation — see [FUNCTIONAL-VERIFICATION.md](./FUNCTIONAL-VERIFICATION.md).
+
+Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0-rc.md). Tag `v0.1.0-rc.1` is **pending explicit operator go** (not pushed automatically).
 
 Repository state:
 
-- `main` @ `7257be0` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), PR #14 (live beta closeout + router escalation), native Flash Tab completion, and first-run agent surface polish.
+- `main` @ `1f864b4` includes PR #12–#15 (RC gauntlet through final closeout docs), native Flash Tab completion, and first-run agent surface polish.
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:
@@ -27,7 +32,7 @@ Compared with the original LemonWoo specification:
 | TestGate verification/fix loop | Done | TestGate runs selected scripts; failed output can be reinjected through **Corregir con agente**. |
 | Local preview/dev-server action | Done | Prompt intent can start/reuse/stop a local server and show a concrete URL. |
 | Release packaging and public guardrails | Done | DMG packaging, release checks, scope guard, public readiness, QA and troubleshooting docs are present. |
-| Live DeepSeek vertical slice | Gated / pending real key | `pnpm smoke:agent:live` pings Flash + Pro + agent-loop fixture with key; exit 78 SKIP without key. Do not claim live API verified without a real-key PASS. |
+| Live DeepSeek vertical slice | In-app PASS / CLI SKIP | Operator dogfood with key in SecretStorage (2026-05-28). CLI `smoke:agent:live` SKIP 78 without shell key is expected. Do not claim CLI PASS when SKIP. |
 | Tab autocomplete as editor feature | Done | Registered as native VS Code inline completion provider (`vscode.languages.registerInlineCompletionItemProvider`) using DeepSeek Flash, with full context limit checks, debounce/cancellation, and error safety. |
 | MCP, multi-agent, persistent memory, Stripe, OpenTelemetry, browser agents | Explicitly out of v1 | Guardrails enforce this scope. These remain v1.1+ roadmap only. |
 
@@ -36,9 +41,9 @@ Current stage summary:
 - **Product shell:** ready.
 - **Agent surface:** ready.
 - **Agent programming loop:** implemented and tested with mocks/fixtures.
-- **Live API proof:** pending `DEEPSEEK_API_KEY` run.
+- **Live API proof:** in-app dogfood PASS (operator); CLI smoke optional with shell key.
 - **Public/release docs:** ready.
-- **Next decision:** run `pnpm smoke:agent:live` with a real `DEEPSEEK_API_KEY`, then tag the first public v1 RC if green.
+- **Next decision:** merge dogfood evidence PR; push tag `v0.1.0-rc.1` only after explicit operator confirmation.
 
 ## 2026-05-28 — v1 live beta closeout (in progress)
 
