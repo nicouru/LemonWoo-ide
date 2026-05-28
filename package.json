@@ -13,7 +13,9 @@
     "check:secrets": "bash scripts/check-secrets.sh",
     "check:licenses": "bash scripts/check-licenses.sh",
     "smoke:bundle": "bash scripts/smoke-bundle.sh",
-    "build:mac": "bash apps/desktop/build-mac.sh"
+    "build:mac": "bash apps/desktop/build-mac.sh",
+    "package:dmg": "bash scripts/package-dmg.sh",
+    "release:check": "bash scripts/release-check.sh"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
