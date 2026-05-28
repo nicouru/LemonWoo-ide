@@ -322,3 +322,18 @@ All workspace tests run and pass cleanly:
 pnpm -r test
 ```
 Latest hardening result: `Test Files  5 passed (5) | Tests  47 passed (47)` for the extension suite.
+
+## First-run agent surface polish (2026-05-28)
+
+Scope:
+
+- Keep LemonWoo Agent as the unequivocal first visible surface.
+- Avoid Welcome taking over the primary editor surface.
+- Improve first-focus behavior in the agent webview.
+
+Behavior verification:
+
+- Startup closes only Welcome-like tabs (safe filter: non-dirty + non-pinned + Welcome detection) before revealing LemonWoo Agent.
+- With no stored key, webview autofocus targets `DeepSeek API key` input.
+- With stored key, webview autofocus targets the agent prompt textarea.
+- `smoke:bundle` remains strict on front window title (`LemonWoo Agent`), so Welcome is not accepted as primary.

@@ -58,4 +58,26 @@ describe("manifest", () => {
     expect(src).toContain("type: \"serverReady\"");
     expect(src).toContain("<a href=");
   });
+
+  it("focuses DeepSeek key input when key is missing", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("function focusKey()");
+    expect(src).toContain("if (m.type === 'needKey')");
+    expect(src).toContain("focusKey()");
+  });
+
+  it("focuses agent prompt when key is already configured", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("function focusPrompt()");
+    expect(src).toContain("if (m.type === 'ready')");
+    expect(src).toContain("focusPrompt()");
+  });
+
+  it("safely closes welcome tabs without closing user files", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("closeWelcomeTabs");
+    expect(src).toContain("isWelcomeTab");
+    expect(src).toContain("!tab.isDirty && !tab.isPinned");
+    expect(src).toContain("vscode.window.tabGroups.close");
+  });
 });
