@@ -16,7 +16,9 @@
     "smoke:agent:live": "node scripts/live-agent-smoke.mjs",
     "build:mac": "bash apps/desktop/build-mac.sh",
     "package:dmg": "bash scripts/package-dmg.sh",
-    "release:check": "bash scripts/release-check.sh"
+    "release:check": "bash scripts/release-check.sh",
+    "rc:check": "bash scripts/rc-check.sh",
+    "rc:report": "node scripts/write-rc-report.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
