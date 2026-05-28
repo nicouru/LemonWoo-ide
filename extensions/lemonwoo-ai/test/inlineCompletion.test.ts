@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import * as vscode from "vscode";
-import { registerInlineCompletionProvider } from "../src/inlineCompletion.js";
+import { registerInlineCompletionProvider, clearClientCache } from "../src/inlineCompletion.js";
 import { DeepSeekClient, buildMessages, DeepSeekAbortError } from "@lemonwoo/deepseek";
 
 // Mock vscode module
@@ -74,13 +74,21 @@ describe("Inline Completion Provider", () => {
     registerInlineCompletionProvider(mockContext);
     const registerSpy = vscode.languages.registerInlineCompletionItemProvider as any;
     providerInstance = registerSpy.mock.calls[0][1];
+
+    // Mock getWorkspaceFolder by default
+    (vscode.workspace.getWorkspaceFolder as any).mockReturnValue({
+      uri: { fsPath: "/workspace" }
+    });
+
+    clearClientCache();
   });
 
   it("returns undefined and does not query DeepSeek if API key is missing", async () => {
     const document: any = {
       getText: () => "const x = 1;",
-      uri: { fsPath: "/workspace/src/file.ts" },
-      offsetAt: () => 0
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 0,
+      languageId: "typescript"
     };
     const position = new vscode.Position(0, 0);
     const inlineContext: any = {};
@@ -109,7 +117,7 @@ describe("Inline Completion Provider", () => {
 
     const document: any = {
       getText: () => fullText,
-      uri: { fsPath: "/workspace/src/file.ts" },
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
       offsetAt: () => 4000,
       languageId: "typescript"
     };
@@ -144,7 +152,7 @@ describe("Inline Completion Provider", () => {
 
     const document: any = {
       getText: () => "const x = 1;",
-      uri: { fsPath: "/workspace/node_modules/pkg/index.ts" },
+      uri: { fsPath: "/workspace/node_modules/pkg/index.ts", scheme: "file" },
       offsetAt: () => 0,
       languageId: "typescript"
     };
@@ -154,11 +162,6 @@ describe("Inline Completion Provider", () => {
       onCancellationRequested: vi.fn(),
       isCancellationRequested: false
     };
-
-    // Stub getWorkspaceFolder to simulate path relative resolution
-    (vscode.workspace.getWorkspaceFolder as any).mockReturnValue({
-      uri: { fsPath: "/workspace" }
-    });
 
     const result = await providerInstance.provideInlineCompletionItems(
       document,
@@ -176,7 +179,7 @@ describe("Inline Completion Provider", () => {
 
     const document: any = {
       getText: () => "const x = 1;",
-      uri: { fsPath: "/workspace/src/file.ts" },
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
       offsetAt: () => 12,
       languageId: "typescript"
     };
@@ -209,7 +212,7 @@ describe("Inline Completion Provider", () => {
 
     const document: any = {
       getText: () => "const x = 1;",
-      uri: { fsPath: "/workspace/src/file.ts" },
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
       offsetAt: () => 12,
       languageId: "typescript"
     };
@@ -240,6 +243,9 @@ describe("Inline Completion Provider", () => {
       token1
     );
 
+    // Wait a tiny bit (less than debounce 300ms)
+    await new Promise((r) => setTimeout(r, 50));
+
     // Trigger second request immediately
     const p2 = providerInstance.provideInlineCompletionItems(
       document,
@@ -248,13 +254,13 @@ describe("Inline Completion Provider", () => {
       token2
     );
 
-    await Promise.all([p1, p2]);
+    const [res1, res2] = await Promise.all([p1, p2]);
 
-    // The first request's abort signal should be aborted
-    const signal1 = chatMock.mock.calls[0][0].signal;
-    const signal2 = chatMock.mock.calls[1][0].signal;
+    expect(res1).toBeUndefined();
+    expect(res2).toBeDefined();
 
-    expect(signal1.aborted).toBe(true);
+    // The second request should not be aborted
+    const signal2 = chatMock.mock.calls[0][0].signal;
     expect(signal2.aborted).toBe(false);
   });
 
@@ -263,7 +269,7 @@ describe("Inline Completion Provider", () => {
 
     const document: any = {
       getText: () => "const x = 1;",
-      uri: { fsPath: "/workspace/src/file.ts" },
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
       offsetAt: () => 12,
       languageId: "typescript"
     };
@@ -290,6 +296,172 @@ describe("Inline Completion Provider", () => {
     chatMock = vi.fn().mockRejectedValue(new Error("API internal error"));
     (DeepSeekClient as any).mockImplementation(() => ({ chat: chatMock }));
     res = await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    expect(res).toBeUndefined();
+  });
+
+  it("caches DeepSeekClient per API key and reuses it", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    clearClientCache();
+
+    // Call twice
+    await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+
+    expect(DeepSeekClient).toHaveBeenCalledTimes(1);
+  });
+
+  it("debounces rapid typing, resulting in a single DeepSeek call", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token1: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+    const token2: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    // Trigger two requests quickly
+    const p1 = providerInstance.provideInlineCompletionItems(document, position, inlineContext, token1);
+    await new Promise((r) => setTimeout(r, 50));
+    const p2 = providerInstance.provideInlineCompletionItems(document, position, inlineContext, token2);
+
+    const [res1, res2] = await Promise.all([p1, p2]);
+
+    expect(res1).toBeUndefined();
+    expect(res2).toBeDefined();
+
+    // Chat should only be called once, because the first request was aborted in debounce
+    expect(chatMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("excludes sensitive files (.env, secrets.json, id_rsa, etc.)", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+
+    const sensitivePaths = [
+      "/workspace/src/.env",
+      "/workspace/src/.env.local",
+      "/workspace/src/.npmrc",
+      "/workspace/src/.yarnrc",
+      "/workspace/src/.pypirc",
+      "/workspace/src/.netrc",
+      "/workspace/src/id_rsa",
+      "/workspace/src/id_ed25519",
+      "/workspace/src/cert.pem",
+      "/workspace/src/app.key",
+      "/workspace/src/cert.crt",
+      "/workspace/src/cert.p12",
+      "/workspace/src/secrets.json",
+      "/workspace/src/secrets.yaml"
+    ];
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    for (const p of sensitivePaths) {
+      const document: any = {
+        getText: () => "const x = 1;",
+        uri: { fsPath: p, scheme: "file" },
+        offsetAt: () => 12,
+        languageId: "typescript"
+      };
+      const position = new vscode.Position(0, 12);
+      const inlineContext: any = {};
+      const token: any = {
+        onCancellationRequested: vi.fn(),
+        isCancellationRequested: false
+      };
+
+      const res = await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+      expect(res).toBeUndefined();
+    }
+
+    expect(chatMock).not.toHaveBeenCalled();
+  });
+
+  it("returns undefined if file is outside workspace", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    (vscode.workspace.getWorkspaceFolder as any).mockReturnValue(undefined);
+
+    const res = await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    expect(res).toBeUndefined();
+    expect(DeepSeekClient).not.toHaveBeenCalled();
+  });
+
+  it("ignores non-file schemas and non-code languages (markdown, plaintext)", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+
+    // Non-file scheme
+    const docNonFile: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "untitled" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    let res = await providerInstance.provideInlineCompletionItems(docNonFile, position, inlineContext, token);
+    expect(res).toBeUndefined();
+
+    // Markdown language
+    const docMarkdown: any = {
+      getText: () => "# Header",
+      uri: { fsPath: "/workspace/src/readme.md", scheme: "file" },
+      offsetAt: () => 8,
+      languageId: "markdown"
+    };
+    res = await providerInstance.provideInlineCompletionItems(docMarkdown, position, inlineContext, token);
     expect(res).toBeUndefined();
   });
 });

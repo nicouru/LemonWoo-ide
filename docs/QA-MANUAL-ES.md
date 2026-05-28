@@ -120,7 +120,7 @@ Recorre el editor y los menús para confirmar que no se muestran característica
    - Presiona la tecla `Tab` para aceptar la sugerencia. El texto debe insertarse en el editor.
 2. **Prueba de Cancelación y Debounce**:
    - Comienza a escribir código de forma rápida y continua.
-   - El editor no debe trabarse ni congelarse. Las peticiones previas deben cancelarse automáticamente en segundo plano a medida que sigues escribiendo (gracias al `AbortController` y a la cancelación nativa de VS Code).
+   - El editor no debe trabarse ni congelarse. Debido al debounce de 300ms, las llamadas de autocompletado no se realizarán a la red si sigues tecleando continuamente. Al dejar de teclear, se esperarán 300ms antes de disparar la petición, cancelando cualquier llamada en curso mediante `AbortController`.
 3. **Prueba Sin Conexión / Sin Key**:
    - Desconecta la API key (haz clic en `Desconectar` o borra la clave).
    - Abre un archivo de código y escribe. No debe aparecer ninguna sugerencia ni realizarse ninguna llamada a la red.
