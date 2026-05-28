@@ -32,6 +32,12 @@ Scope:
 
 OpenCode remains the preferred upstream to re-evaluate, but not a blocker if the local runtime can provide the loop with less risk.
 
+Status (2026-05-28):
+
+- Local `runAgentLoop` fallback is **merged and default** (PR #17).
+- OpenCode structured re-evaluation spike: `pnpm opencode:spike` — see [UPSTREAMS.md](./UPSTREAMS.md) and [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md).
+- **Do not replace** the fallback runtime until OpenCode passes CLI + DeepSeek + tool-loop criteria with a reversible adapter (default off).
+
 Definition of done:
 
 - A real multi-file fixture is fixed through multiple internal steps.

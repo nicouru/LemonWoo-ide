@@ -7,4 +7,10 @@ describe("runtime constraints", () => {
     const src = readFileSync(resolve(process.cwd(), "src/index.ts"), "utf8");
     expect(src.toLowerCase()).not.toContain("anthropic");
   });
+
+  it("keeps external harness spike optional, not default runtime", () => {
+    const taskSrc = readFileSync(resolve(process.cwd(), "src/runAgentTask.ts"), "utf8");
+    expect(taskSrc).toContain("runAgentLoop");
+    expect(taskSrc).not.toMatch(/from\s+["'].*opencode/i);
+  });
 });

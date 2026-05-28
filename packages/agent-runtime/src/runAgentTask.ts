@@ -1,6 +1,7 @@
 /**
  * LemonWoo agent runtime entrypoint.
- * v2: bounded multi-step loop via `runAgentLoop`.
+ * v2 default: bounded multi-step loop via `runAgentLoop` (local fallback harness).
+ * External harness evaluation lives in `opencodeSpike.ts` only; not wired here.
  * v1 compatibility: `singleShot: true` keeps one-shot behavior for tests.
  */
 import { DeepSeekAbortError } from "@lemonwoo/deepseek";

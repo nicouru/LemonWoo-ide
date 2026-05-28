@@ -7,41 +7,83 @@
 - Native VS Code extension APIs for agent panel, inline completion, workspace edits, diagnostics, and SecretStorage.
 - Local Node.js packages in this monorepo for DeepSeek routing, agent runtime fallback, and TestGate.
 
+## v2 runtime default (local fallback)
+
+Status: **implemented and default** (PR #17+).
+
+- `runAgentTask` → `runAgentLoop` bounded multi-step loop with internal tools (`read_file`, `search`, `propose_diff`, `test_gate`, `summarize`).
+- Extension adapters wire real workspace I/O; runtime never auto-applies diffs.
+- DeepSeek Pro/Flash routing via `@lemonwoo/deepseek`; no model picker.
+- OpenCode is **not** wired into the live agent path; it remains an evaluation spike.
+
 ## Deferred upstreams
 
-- OpenCode SDK remains a documented spike path, not the default v1 runtime.
-- Continue is not bundled in v1; Tab completion is implemented natively in `lemonwoo-ai` using DeepSeek Flash.
-- MCP, browser agents, semantic indexers, and multi-agent harnesses remain v1.1+ research only.
+- **Continue** — not bundled; native Flash Tab completion in `lemonwoo-ai` is the v1/v2 path.
+- **Cline / Aider / Goose / OpenHands** — comparison only; see [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md).
+- **MCP, browser agents, semantic indexers, multi-agent UI** — v2.3+ / explicit deferrals per [V2-ROADMAP.md](./V2-ROADMAP.md).
+- **Serena / semantic context** — v2.1 context intelligence, not primary runtime.
 
-## OpenCode + DeepSeek spike
+## OpenCode + DeepSeek re-evaluation (preferred upstream to re-assess)
 
-Status: executed (initial spike), blocked by missing `opencode` binary in local environment.
+Status: **re-evaluated** on branch `feature/v2-opencode-harness-reevaluation`.
 
-Evidence:
-
-```bash
-pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs
-```
-
-Output:
+Previous blocker:
 
 ```text
 OpenCode spike failed: Error: spawn opencode ENOENT
 ```
 
-Interpretation:
+Root cause: `@opencode-ai/sdk` `createOpencodeServer()` spawns the **`opencode` CLI binary** on PATH. The SDK compiles without the binary; ENOENT is an environment/runtime gap, not a TypeScript failure.
 
-- `@opencode-ai/sdk` is wired and compiles.
-- Runtime start currently requires `opencode` runtime binary installed on host PATH.
-- v1 agent programming loop uses an internal fallback runtime (`@lemonwoo/agent-runtime` `runAgentTask`) instead of waiting on OpenCode.
-- OpenCode integration remains available via `packages/agent-runtime/src/opencodeSpike.ts` and `scripts/opencode-spike.mjs` for future wiring once `opencode` is on PATH.
+Current spike:
 
-## Agent runtime fallback (v1 default)
+```bash
+pnpm opencode:spike
+# or
+pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs
+```
 
-Status: implemented.
+Structured report fields: `SDK_IMPORT`, `CLI_AVAILABLE`, `DEEPSEEK_CONFIG`, `SESSION_CREATE`, `SIMPLE_PROMPT`, `TOOL_LOOP_CAPABLE`, `FIXTURE_MULTI_FILE`.
 
-- `runAgentTask` is **single-shot**: one DeepSeek call per user action (or TestGate fix retry) with preassembled local context.
-- It does **not** perform dynamic tool-calling, MCP routing, or an internal agent framework loop.
-- Local steps are deterministic in the extension: context gather, multi-file diff plan/apply, TestGate, preview router.
-- DeepSeek Pro/Flash routing via `@lemonwoo/deepseek`.
-- No MCP, no multi-agent orchestration, no persistent memory.
+### Reproducible CLI without global install
+
+1. **Monorepo devDependency (recommended for contributors):**
+
+   ```bash
+   pnpm install   # opencode-ai postinstall via pnpm.onlyBuiltDependencies
+   pnpm opencode:spike
+   ```
+
+2. **Explicit binary override:**
+
+   ```bash
+   export OPENCODE_BIN="$HOME/.local/share/pnpm/global/5/node_modules/opencode-ai/bin/opencode.exe"
+   pnpm opencode:spike
+   ```
+
+3. **Ephemeral (no lockfile change):**
+
+   ```bash
+   pnpm dlx opencode-ai@latest --version
+   # ensure resulting bin dir is on PATH for the spike process
+   ```
+
+### DeepSeek compatibility (LemonWoo rules)
+
+- Endpoint: `https://api.deepseek.com` via OpenAI-compatible provider config.
+- API key: **`DEEPSEEK_API_KEY` in shell only** for CLI spike — `{env:DEEPSEEK_API_KEY}` in `OPENCODE_CONFIG_CONTENT`.
+- LemonWoo.app SecretStorage key is **never read** by the spike.
+- `disabled_providers: ["opencode"]` hides OpenCode Zen; LemonWoo keeps automatic Pro/Flash routing in the product path.
+- Live checks **SKIP** when the shell key is absent (expected when key lives only in LemonWoo.app).
+
+### Decision (this evaluation)
+
+- OpenCode remains the **primary candidate** if structured spike reaches PASS on CLI + session + tools + live DeepSeek.
+- Until then, **`runAgentLoop` stays the default** reversible fallback.
+- See [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md) for the full harness matrix.
+
+Implementation files:
+
+- `packages/agent-runtime/src/opencodeBinary.ts` — resolve CLI path
+- `packages/agent-runtime/src/opencodeSpike.ts` — structured harness spike
+- `scripts/opencode-spike.mjs` — CLI reporter

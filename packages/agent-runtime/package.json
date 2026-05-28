@@ -24,6 +24,8 @@
     "@lemonwoo/deepseek": "workspace:*"
   },
   "devDependencies": {
-    "@opencode-ai/sdk": "^0.6.3"
+    "@opencode-ai/sdk": "^0.6.3",
+    "opencode-ai": "^1.15.11",
+    "vitest": "^3.2.4"
   }
 }
