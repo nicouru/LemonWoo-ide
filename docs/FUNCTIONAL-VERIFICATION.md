@@ -180,3 +180,44 @@ pnpm smoke:bundle
 Result:
 
 - All commands passed after local action router implementation.
+
+## Agent programming loop (2026-05-28)
+
+Fixture:
+
+- `fixtures/agent-loop-ts/` (`src/sum.ts` bug, `test/sum.test.ts` fails until fixed)
+
+Automated coverage:
+
+```bash
+pnpm -r test
+```
+
+Includes:
+
+- `runAgentTask` single-shot cycle with mocked DeepSeek client (not dynamic tool-calling).
+- Editor snapshot / explicit editor for `gatherAgentContext`.
+- Nested repo tree paths (`src/...`).
+- `lastUserTask` for TestGate fix loop.
+- Multi-file diff parse/apply safety (path traversal, `.git/`, new file, hunk mismatch without partial apply).
+- Context exclusions and on-demand `rg` heuristics.
+- Extension wiring for `Corregir con agente`, `runTestGate`, `planMultiFileApply`.
+
+Manual vertical slice:
+
+1. Open `LemonWoo.app` and folder `fixtures/agent-loop-ts`.
+2. Ask: `Arreglá el test que falla en sum`.
+3. Review proposed multi-file (or single-file) `diff` in panel.
+4. Click **Aplicar diff**.
+5. Click **Verificar** (TestGate).
+6. If red, click **Corregir con agente** and repeat until green.
+
+Command evidence:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm smoke:bundle
+```

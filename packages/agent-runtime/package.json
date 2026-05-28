@@ -5,13 +5,25 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./opencode": {
+      "types": "./dist/opencodeSpike.d.ts",
+      "import": "./dist/opencodeSpike.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@lemonwoo/deepseek": "workspace:*",
+    "@lemonwoo/deepseek": "workspace:*"
+  },
+  "devDependencies": {
     "@opencode-ai/sdk": "^0.6.3"
   }
 }

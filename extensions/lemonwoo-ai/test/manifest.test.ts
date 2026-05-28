@@ -21,22 +21,22 @@ describe("manifest", () => {
   });
 
   it("includes AGENTS.md and .lemonwoo/rules context hooks", () => {
-    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    const src = readFileSync(resolve(process.cwd(), "src/agentContext.ts"), "utf8");
     expect(src).toContain("AGENTS.md");
     expect(src).toContain(".lemonwoo");
   });
 
   it("guards path traversal and .git edits in apply flow", () => {
-    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    const src = readFileSync(resolve(process.cwd(), "src/multiDiffApply.ts"), "utf8");
     expect(src).toContain("isSafeWorkspacePath");
     expect(src).toContain("relative(workspace");
     expect(src).toContain("\".git\"");
   });
 
-  it("applies unified diffs instead of replacing files with added lines only", () => {
-    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
-    expect(src).toContain("applyUnifiedDiffToText");
-    expect(src).not.toContain("extractSingleFileReplacement");
+  it("applies multi-file diffs via agent-runtime planner", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/multiDiffApply.ts"), "utf8");
+    expect(src).toContain("planMultiFileApply");
+    expect(src).toContain("workspace.applyEdit");
   });
 
   it("wires real cancellation for the stop button", () => {
