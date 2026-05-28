@@ -10,7 +10,7 @@ Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0
 
 Repository state:
 
-- `main` @ `bc2c680` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), native Flash Tab completion, and first-run agent surface polish.
+- `main` @ `7257be0` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), PR #14 (live beta closeout + router escalation), native Flash Tab completion, and first-run agent surface polish.
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:
