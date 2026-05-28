@@ -21,9 +21,22 @@ export {
 export {
   runAgentTask,
   runAgentTaskOnce,
+  runAgentLoop,
+  DEFAULT_RUNTIME_LIMITS,
   type AgentEvent,
+  type AgentRuntimeEvent,
   type AgentPhase,
   type AgentTaskResult,
   type AgentContextSnapshot,
-  type RunAgentTaskInput
+  type RunAgentTaskInput,
+  type AgentRuntimeAdapters,
+  type AgentToolName,
+  type AgentToolRequest,
+  type AgentToolResult,
+  type RuntimeLimits,
+  type TestGateStructuredResult
 } from "./runAgentTask.js";
+export { parseToolRequests, serializeToolRequests } from "./toolParse.js";
+export { executeTool } from "./tools.js";
+export { redactToolOutput } from "./redactTool.js";
+export type { AgentStep, RuntimeLoopState } from "./contracts.js";

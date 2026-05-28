@@ -9,6 +9,16 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 
+## v2.0 agent runtime real (development)
+
+Automated coverage (`packages/agent-runtime/test/runAgentLoop.test.ts`, `tools.test.ts`):
+
+- Bounded loop with `maxSteps` default 6 and warning on exhaustion.
+- Internal `<lemonwoo_tool>` parsing for read_file / search / propose_diff / test_gate / summarize.
+- Path safety: rejects `.git`, traversal, absolute paths.
+- Runtime does not write to disk; apply remains extension-only.
+- Extension wires `buildAgentAdapters` and summarizes tool events in the existing stream (no tool console UI).
+
 ## v1 final RC validation run (2026-05-28, main @ 7257be0)
 
 | Check | Result |

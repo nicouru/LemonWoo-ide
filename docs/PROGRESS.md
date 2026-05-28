@@ -1,6 +1,14 @@
 # PROGRESS
 
-## Current stage — 2026-05-28
+## Current stage — v2.0 in progress
+
+LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Development focus is **v2.0 Agent Runtime Real** on branch `feature/v2-agent-runtime-real`:
+
+- Bounded multi-step loop (`runAgentLoop`) with internal tools (read_file, search, propose_diff, test_gate, summarize).
+- Max 6 steps, repair via `fixTestOutput`, no MCP, no disk writes from runtime.
+- Extension passes adapters; UI remains single LemonWoo Agent panel.
+
+## v1 RC — 2026-05-28
 
 LemonWoo is in **v1 RC ready for tag — in-app live dogfood PASS**.
 

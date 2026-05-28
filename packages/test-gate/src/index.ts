@@ -51,16 +51,39 @@ export function decideTestGate(repoPath: string, changedFiles: string[]): TestGa
   return { packageManager: manager, commands };
 }
 
+export interface TestGateRunResult {
+  ok: boolean;
+  output: string;
+  commands: string[];
+  durationMs: number;
+  truncated: boolean;
+}
+
+const MAX_OUTPUT_CHARS = 12_000;
+
 export async function runTestGate(
   repoPath: string,
   changedFiles: string[],
   signal?: AbortSignal
 ): Promise<{ ok: boolean; output: string }> {
+  const structured = await runTestGateStructured(repoPath, changedFiles, signal);
+  return { ok: structured.ok, output: structured.output };
+}
+
+export async function runTestGateStructured(
+  repoPath: string,
+  changedFiles: string[],
+  signal?: AbortSignal
+): Promise<TestGateRunResult> {
+  const started = Date.now();
   const decision = decideTestGate(repoPath, changedFiles);
   if (decision.commands.length === 0) {
     return {
       ok: false,
-      output: "TestGate: no matching scripts in package.json for changed files (typecheck/lint/test)."
+      output: "TestGate: no matching scripts in package.json for changed files (typecheck/lint/test).",
+      commands: [],
+      durationMs: Date.now() - started,
+      truncated: false
     };
   }
   let output = "";
@@ -77,8 +100,22 @@ export async function runTestGate(
       output += `\n$ ${decision.packageManager} run ${cmd}\n${res.all ?? ""}\n`;
     } catch (error: any) {
       output += `\n$ ${decision.packageManager} run ${cmd}\n${error?.all ?? String(error)}\n`;
-      return { ok: false, output: redactOutput(output) };
+      const redacted = redactOutput(output);
+      return {
+        ok: false,
+        output: redacted.length > MAX_OUTPUT_CHARS ? redacted.slice(0, MAX_OUTPUT_CHARS) + "\n...[truncated]" : redacted,
+        commands: decision.commands,
+        durationMs: Date.now() - started,
+        truncated: redacted.length > MAX_OUTPUT_CHARS
+      };
     }
   }
-  return { ok: true, output: redactOutput(output) };
+  const redacted = redactOutput(output);
+  return {
+    ok: true,
+    output: redacted.length > MAX_OUTPUT_CHARS ? redacted.slice(0, MAX_OUTPUT_CHARS) + "\n...[truncated]" : redacted,
+    commands: decision.commands,
+    durationMs: Date.now() - started,
+    truncated: redacted.length > MAX_OUTPUT_CHARS
+  };
 }

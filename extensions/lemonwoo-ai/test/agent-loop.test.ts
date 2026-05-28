@@ -19,6 +19,15 @@ describe("agent programming loop wiring", () => {
     expect(src).not.toContain("modelSelect");
   });
 
+  it("wires v2 runtime adapters without exposing tool UI", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("buildAgentAdapters");
+    expect(src).toContain("isSafeRelPath");
+    expect(src).toContain('event.type === "tool"');
+    expect(src).not.toContain("modelSelect");
+    expect(src).not.toContain("providerSelect");
+  });
+
   it("validates API key before storing", () => {
     const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
     expect(src).toContain("validateKey()");
