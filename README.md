@@ -24,10 +24,10 @@ This repository intentionally excludes v1.1 features (MCP Hub, multi-agent orche
 - Native inline Tab completion using DeepSeek Flash with debounce, cancellation, sensitive-file exclusions, and cache reset on key disconnect.
 - RC/public release guardrails and reproducible local reports.
 
-Still externally gated before calling v1 fully proven:
+Still recommended before tagging a public RC:
 
-- `pnpm smoke:agent:live` with a real `DEEPSEEK_API_KEY` (Flash + Pro + agent-loop fixture).
-- Manual dogfood checklist in [docs/QA-MANUAL-ES.md](docs/QA-MANUAL-ES.md) §3b inside `LemonWoo.app`.
+- Optional CLI: `pnpm smoke:agent:live` with `DEEPSEEK_API_KEY` in the shell (SKIP 78 is OK if the key lives only in LemonWoo.app).
+- In-app dogfood recorded in [docs/FUNCTIONAL-VERIFICATION.md](docs/FUNCTIONAL-VERIFICATION.md) (operator attestation 2026-05-28).
 - Apple Developer ID signing/notarization remains future work; v1 uses ad-hoc signing.
 
 Release candidate notes (tag pending live proof): [docs/RELEASE-NOTES-v0.1.0-rc.md](docs/RELEASE-NOTES-v0.1.0-rc.md).

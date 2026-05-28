@@ -18,8 +18,34 @@ This file records command-level evidence for the required v1 vertical slice.
 | `pnpm smoke:bundle` | PASS (`LemonWoo Agent` window) |
 | `verify-release-artifacts` / `hdiutil verify` | PASS on `dist/LemonWoo-0.1.0-mac-arm64.dmg` |
 | `pnpm smoke:agent:live` | **SKIP exit 78** — `DEEPSEEK_API_KEY` not set in validation environment |
-| Manual dogfood in `LemonWoo.app` | **Pending** — requires operator + real key (see `docs/QA-MANUAL-ES.md` §3b) |
-| Git tag `v0.1.0-rc.1` | **Not created** — blocked on live PASS + manual dogfood |
+| Manual dogfood in `LemonWoo.app` | **PASS** by operator attestation (2026-05-28, key in SecretStorage only); workspace path/file mutation not terminal-cross-verified |
+| Git tag `v0.1.0-rc.1` | **Pending** — requires explicit operator confirmation after accepting the in-app attestation / fixture cross-check note |
+
+## In-app live dogfood (2026-05-28, main @ `1f864b4`)
+
+DeepSeek key configured **only inside LemonWoo.app** (SecretStorage). No key was read from Keychain, logs, or the shell.
+
+| Step | Operator result |
+| --- | --- |
+| LemonWoo Agent primary on launch | PASS |
+| Key already connected (no re-prompt) | PASS |
+| Agent prompt focused and usable | PASS |
+| Opened fixture workspace in LemonWoo.app | PASS by operator attestation |
+| Agent task + diff for `sum` fix | PASS by operator attestation |
+| Apply diff | PASS by operator attestation |
+| TestGate / verify after apply | PASS by operator attestation (in-app) |
+| Corregir con agente (if needed) | N/A (TestGate passed) |
+| Tab completion ghost text (`.ts`) | PASS |
+| Local preview URL + stop server | PASS |
+| Second task without stale diff | PASS |
+
+CLI live smoke on the same machine without `DEEPSEEK_API_KEY` in the shell:
+
+| Check | Result |
+| --- | --- |
+| `pnpm smoke:agent:live` | **SKIP exit 78** — expected; key lives in-app only |
+
+Maintainer spot-check (this git clone, after dogfood): tracked `fixtures/agent-loop-ts/src/sum.ts` was still the seeded bug and `npm test` was red. Treat the table above as an in-app operator attestation, not as terminal-cross-verified evidence for this exact tracked fixture path. Before pushing the RC tag, either accept that manual attestation explicitly or re-run the in-app flow while cross-verifying file mutation and tests from the terminal.
 
 ## v1 live beta closeout (2026-05-28)
 
