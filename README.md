@@ -15,7 +15,7 @@ This repository intentionally excludes v1.1 features (MCP Hub, multi-agent orche
 
 - `pnpm release:check`: tests + build + checks + bundle smoke + DMG packaging.
 - `pnpm rc:check`: reproducible RC validation gate (includes scope/public guardrails and live smoke policy).
-- `pnpm rc:report`: writes `docs/RC-REPORT.md` with git/artifact/check metadata.
+- `pnpm rc:report`: writes local report `dist/RC-REPORT.md` with git/artifact/check metadata.
 
 Artifacts are expected under `dist/`:
 

@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { join, relative, resolve } from "node:path";
 
 const root = resolve(new URL("..", import.meta.url).pathname);
-const docsDir = join(root, "docs");
-const reportPath = join(docsDir, "RC-REPORT.md");
+const reportPath = join(root, "dist", "RC-REPORT.md");
 const pkgPath = join(root, "package.json");
 const distDir = join(root, "dist");
 const appPath = join(distDir, "LemonWoo.app");
-const rcCheckResultsPath = join(docsDir, ".rc-check-last.json");
+const rcCheckResultsPath = join(distDir, "rc-check-last.json");
 
 const run = (command) => execSync(command, { cwd: root, encoding: "utf8" }).trim();
 const safeRun = (command) => {
@@ -24,7 +23,14 @@ const safeRun = (command) => {
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 const branch = safeRun("git rev-parse --abbrev-ref HEAD") || "unknown";
 const commit = safeRun("git rev-parse HEAD") || "unknown";
-const statusRaw = safeRun("git status --porcelain");
+const statusRaw = safeRun("git status --porcelain")
+  .split("\n")
+  .filter(Boolean)
+  .filter((line) => {
+    const normalized = line.replace(/^[ MADRCU?!]{2}\s+/, "");
+    return normalized !== "docs/RC-REPORT.md" && normalized !== "dist/rc-check-last.json" && normalized !== "dist/RC-REPORT.md";
+  })
+  .join("\n");
 const gitState = statusRaw ? "dirty" : "clean";
 const localDate = new Date().toLocaleString();
 
@@ -65,9 +71,13 @@ if (existsSync(rcCheckResultsPath)) {
       liveSmokeNote = `- \`DEEPSEEK_API_KEY\`: run ejecutado con fallo en live smoke (estado ${live.status}, exit ${live.exitCode}).`;
     }
   } catch {
-    rcSummary = ["- Error leyendo `docs/.rc-check-last.json`."];
+    rcSummary = ["- Error leyendo `dist/rc-check-last.json`."];
   }
 }
+
+const rel = (absolutePath) => relative(root, absolutePath).replaceAll("\\", "/");
+const appPathDisplay = existsSync(appPath) ? `\`${rel(appPath)}\`` : "_No existe (`dist/LemonWoo.app`)_";
+const dmgPathDisplay = dmgPath ? `\`${dmgPath}\`` : "_No existe DMG versionado_";
 
 const lines = [
   "# RC Report",
@@ -80,8 +90,8 @@ const lines = [
   `- Version (\`package.json\`): \`${pkg.version}\``,
   "",
   "## Artifact Paths",
-  `- App bundle: ${existsSync(appPath) ? `\`${appPath}\`` : "_No existe (`dist/LemonWoo.app`)_"} `,
-  `- DMG: ${dmgPath ? `\`${join(root, dmgPath)}\`` : "_No existe DMG versionado_"} `,
+  `- App bundle: ${appPathDisplay}`,
+  `- DMG: ${dmgPathDisplay}`,
   "",
   "## DMG SHA256",
   dmgSha256 ? `- Calculado: \`${dmgSha256}\`` : "- Calculado: _N/A_",
@@ -96,6 +106,10 @@ const lines = [
   "> Nota: este reporte nunca imprime el valor de `DEEPSEEK_API_KEY`, solo su estado operativo.",
   "",
 ];
+
+if (!existsSync(distDir)) {
+  execSync("mkdir -p dist", { cwd: root });
+}
 
 writeFileSync(reportPath, lines.join("\n"), "utf8");
 console.log(`RC report written: ${reportPath}`);

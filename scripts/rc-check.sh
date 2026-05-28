@@ -4,9 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-RESULTS_PATH="docs/.rc-check-last.json"
+RESULTS_PATH="dist/rc-check-last.json"
 TMP_RESULTS="$(mktemp "${TMPDIR:-/tmp}/lemonwoo-rc-check.XXXXXX.json")"
 trap 'rm -f "$TMP_RESULTS"' EXIT
+
+mkdir -p "dist"
 
 timestamp="$(date '+%Y-%m-%d %H:%M:%S %z')"
 printf '{\n  "generatedAt": "%s",\n  "steps": [\n' "$timestamp" > "$TMP_RESULTS"
