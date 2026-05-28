@@ -50,5 +50,13 @@ export async function applyMultiFileDiff(
     return { ok: false, touched: [], error: "No se pudo aplicar el diff (applyEdit falló)." };
   }
 
+  for (const patch of plan.patches) {
+    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(join(workspace, patch.relPath)));
+    const saved = await doc.save();
+    if (!saved) {
+      return { ok: false, touched: [], error: `No se pudo guardar ${patch.relPath}.` };
+    }
+  }
+
   return { ok: true, touched: plan.patches.map((p) => p.relPath) };
 }

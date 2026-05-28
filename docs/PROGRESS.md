@@ -83,6 +83,16 @@ Current stage summary:
   - `pnpm check:secrets`: PASS.
 - The full in-app green pass is still pending because the post-fix live app retry remained long-running after file reads and was cancelled rather than reported as PASS.
 
+## 2026-05-28 — v2.0 apply-to-disk hardening
+
+- A follow-up in-app retry showed another product issue: `workspace.applyEdit` could leave changed files dirty in editor buffers while terminal/TestGate still saw old disk contents.
+- `extensions/lemonwoo-ai/src/multiDiffApply.ts` now saves every touched document after `workspace.applyEdit`.
+- If any document cannot be saved, LemonWoo returns a clear `No se pudo guardar <file>` error instead of silently leaving TestGate on stale disk state.
+- Added a manifest-level regression check that apply flow calls `doc.save()`.
+- Verification:
+  - `pnpm --filter lemonwoo-ai test`: PASS.
+  - `pnpm -r build`: PASS.
+
 ## 2026-05-28 — v1 live beta closeout (in progress)
 
 - `scripts/live-agent-smoke.mjs` now pings Flash (`tab`) and Pro (`agent`) before the agent-loop fixture; redacts secrets; requires `pnpm -r build`; cleans temp dirs in `finally`.

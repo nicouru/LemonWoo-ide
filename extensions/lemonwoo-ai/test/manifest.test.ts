@@ -48,6 +48,12 @@ describe("manifest", () => {
     expect(src).toContain("workspace.applyEdit");
   });
 
+  it("saves files after applying diffs so TestGate sees disk changes", () => {
+    const src = readFileSync(resolve(__dirname, "../src/multiDiffApply.ts"), "utf8");
+    expect(src).toContain("doc.save()");
+    expect(src).toContain("No se pudo guardar");
+  });
+
   it("wires real cancellation for the stop button", () => {
     const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
     expect(src).toContain("AbortController");
