@@ -9,7 +9,7 @@ Automated matrix on `main` @ `1f864b4` (PR #15 merged): `pnpm -r test`, `pnpm rc
 Live proof split:
 
 - **CLI** `pnpm smoke:agent:live`: **SKIP exit 78** when `DEEPSEEK_API_KEY` is not in the shell (key configured only in LemonWoo.app SecretStorage).
-- **In-app dogfood** (2026-05-28): operator attestation **PASS** for agent loop, TestGate, Tab completion, preview, and second-task isolation — see [FUNCTIONAL-VERIFICATION.md](./FUNCTIONAL-VERIFICATION.md).
+- **In-app dogfood** (2026-05-28): operator attestation **PASS** for agent loop, TestGate, Tab completion, preview, and second-task isolation; workspace path/file mutation was not terminal-cross-verified — see [FUNCTIONAL-VERIFICATION.md](./FUNCTIONAL-VERIFICATION.md).
 
 Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0-rc.md). Tag `v0.1.0-rc.1` is **pending explicit operator go** (not pushed automatically).
 
@@ -41,7 +41,7 @@ Current stage summary:
 - **Product shell:** ready.
 - **Agent surface:** ready.
 - **Agent programming loop:** implemented and tested with mocks/fixtures.
-- **Live API proof:** in-app dogfood PASS (operator); CLI smoke optional with shell key.
+- **Live API proof:** in-app dogfood PASS by operator attestation; CLI smoke optional with shell key, or re-run manual dogfood with terminal cross-check before tag if stricter evidence is desired.
 - **Public/release docs:** ready.
 - **Next decision:** merge dogfood evidence PR; push tag `v0.1.0-rc.1` only after explicit operator confirmation.
 
