@@ -58,6 +58,48 @@ Remaining manual confirmation:
 - Apply diff, run **Verificar**, and use **Corregir con agente** if TestGate is red.
 - Cross-check `/tmp/lemonwoo-v2-manual` from the terminal with `npm test`.
 
+## v2.0 in-app dogfood hardening (2026-05-28)
+
+Operator: Codex via Computer Use controlling the actual macOS `LemonWoo.app`.
+
+Fixture copy:
+
+```bash
+rm -rf /tmp/lemonwoo-v2-manual
+cp -R fixtures/v2-multi-file-agent /tmp/lemonwoo-v2-manual
+cd /tmp/lemonwoo-v2-manual && npm test
+```
+
+Baseline result: `npm test` failed as expected before the agent patch.
+
+In-app observations:
+
+- `LemonWoo.app` opened `/tmp/lemonwoo-v2-manual` with `LemonWoo Agent` as the active surface.
+- The DeepSeek key was already connected via app `SecretStorage`; no key was read from shell, logs, Keychain, or files.
+- The agent used internal tool syntax and read `AGENTS.md`, `TASK.md`, `package.json`, source files, and the test file.
+- The first response produced a plausible multi-file diff.
+- Clicking **Aplicar diff** failed safely with `src/invoice.js: Contexto del hunk no coincide con el archivo actual`.
+
+Code hardening added from this dogfood:
+
+- `planMultiFileApply` now tolerates stale model-generated hunk line numbers only when the old hunk context matches exactly once after the current cursor.
+- Ambiguous stale-context hunks continue to fail closed.
+
+Command evidence after the fix:
+
+```bash
+pnpm --filter @lemonwoo/agent-runtime test
+pnpm v2:gauntlet
+pnpm -r test
+pnpm verify:docs
+pnpm check:secrets
+```
+
+Result:
+
+- All commands above passed.
+- Full in-app green pass remains pending: after rebuilding and rerunning `LemonWoo.app`, the live model run stayed in `Pensando` after file reads long enough to cancel instead of claiming a pass.
+
 ## v1 final RC validation run (2026-05-28, main @ 7257be0)
 
 | Check | Result |

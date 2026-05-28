@@ -148,6 +148,46 @@ export function touchedFilesFromDiff(raw: string): string[] {
   return [...new Set(parseMultiFileDiff(raw).map((p) => p.relPath))];
 }
 
+function oldLinesForHunk(diffLines: string[]): string[] {
+  const oldLines: string[] = [];
+  for (let i = 1; i < diffLines.length; i += 1) {
+    const line = diffLines[i];
+    if (!line || line.startsWith("\\ No newline")) continue;
+    if (line.startsWith(" ") || line.startsWith("-")) {
+      oldLines.push(line.slice(1));
+    }
+  }
+  return oldLines;
+}
+
+function linesMatchAt(lines: string[], expected: string[], start: number): boolean {
+  if (start < 0 || start + expected.length > lines.length) return false;
+  return expected.every((line, index) => lines[start + index] === line);
+}
+
+function findUniqueHunkStart(
+  originalLines: string[],
+  diffLines: string[],
+  preferredStart: number,
+  minStart: number
+): number | null {
+  const oldLines = oldLinesForHunk(diffLines);
+  if (!oldLines.length) {
+    return preferredStart >= minStart && preferredStart <= originalLines.length ? preferredStart : null;
+  }
+  if (preferredStart >= minStart && linesMatchAt(originalLines, oldLines, preferredStart)) {
+    return preferredStart;
+  }
+
+  let match: number | null = null;
+  for (let index = minStart; index <= originalLines.length - oldLines.length; index += 1) {
+    if (!linesMatchAt(originalLines, oldLines, index)) continue;
+    if (match !== null) return null;
+    match = index;
+  }
+  return match;
+}
+
 function applyHunksToText(original: string, hunks: string[]): string | null {
   const newline = original.includes("\r\n") ? "\r\n" : "\n";
   const hadTrailingNewline = original.endsWith("\n");
@@ -161,8 +201,8 @@ function applyHunksToText(original: string, hunks: string[]): string | null {
     const diffLines = hunkText.split(/\r?\n/);
     const header = diffLines[0]?.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
     if (!header) return null;
-    const hunkStart = Number(header[1]) - 1;
-    if (hunkStart < cursor) return null;
+    const hunkStart = findUniqueHunkStart(originalLines, diffLines, Number(header[1]) - 1, cursor);
+    if (hunkStart === null) return null;
     while (cursor < hunkStart) output.push(originalLines[cursor++]);
 
     for (let i = 1; i < diffLines.length; i += 1) {
