@@ -79,14 +79,15 @@ echo "========================================="
 echo "LemonWoo RC check started"
 echo "========================================="
 
-run_step "Workspace tests" "pnpm -r test"
 run_step "Workspace build" "pnpm -r build"
+run_step "Workspace tests" "pnpm -r test"
 run_step "Branding check" "pnpm check:branding"
 run_step "Secrets check" "pnpm check:secrets"
 run_step "Licenses check" "pnpm check:licenses"
 run_step "Bundle smoke" "pnpm smoke:bundle"
 run_step "V1 scope guard" "bash scripts/verify-v1-scope.sh"
 run_step "Public readiness guard" "bash scripts/verify-public-readiness.sh"
+run_step "Document consistency guard" "pnpm verify:docs"
 run_step "Release artifacts verification" "bash scripts/verify-release-artifacts.sh"
 run_live_smoke
 

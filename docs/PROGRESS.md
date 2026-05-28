@@ -46,6 +46,13 @@ Current stage summary:
 
 Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
 
+## 2026-05-28 — Document consistency guardrail (v1 RC hardening)
+
+- Added automated document consistency guardrail (`scripts/verify-docs-current.mjs`) to scan for obsolete references, outdated features, or local paths.
+- Exposed check via npm script `verify:docs`.
+- Integrated `verify:docs` into the release candidate validation pipeline (`scripts/rc-check.sh`) right after the public readiness check.
+- Documented the verification command in `README.md` and updated pre-publication checklist in `docs/PUBLIC-RELEASE-CHECKLIST.md`.
+
 ## 2026-05-28 — RC distribution hardening
 
 - Added reproducible RC validation entrypoint:
