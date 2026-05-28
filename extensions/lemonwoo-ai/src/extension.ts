@@ -264,12 +264,12 @@ async function runAgentCycle(
         panel.webview.postMessage({
           type: "result",
           text: lastAgentText,
-          hasDiff: event.result.hasDiff && hasSingleDiffBlock(event.result.message)
+          hasDiff: event.result.hasDiff
         });
         if (event.result.hasDiff && hasSingleDiffBlock(event.result.message)) {
           panel.webview.postMessage({ type: "info", text: "Diff listo para revisar." });
         }
-        if (event.result.hasDiff && hasMultipleDiffBlocks(event.result.message)) {
+        if (!event.result.hasDiff && hasMultipleDiffBlocks(event.result.message)) {
           panel.webview.postMessage({
             type: "error",
             text: "Se detectaron múltiples bloques diff; enviá una sola propuesta diff para aplicar."

@@ -8,6 +8,7 @@ export {
 export { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
 export {
   extractDiffText,
+  evaluateDiffProposal,
   countDiffBlocks,
   parseMultiFileDiff,
   planMultiFileApply,
@@ -20,7 +21,6 @@ export {
 export {
   runAgentTask,
   runAgentTaskOnce,
-  extractDiffFromResponse,
   type AgentEvent,
   type AgentPhase,
   type AgentTaskResult,

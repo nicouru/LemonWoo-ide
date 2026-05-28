@@ -5,9 +5,9 @@
  */
 import { DeepSeekClient } from "@lemonwoo/deepseek";
 import { DeepSeekAbortError } from "@lemonwoo/deepseek";
-import type { LemonWooTaskKind } from "@lemonwoo/deepseek";
+import { routeTask, type LemonWooTaskKind } from "@lemonwoo/deepseek";
 import { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
-import { touchedFilesFromDiff } from "./multiDiff.js";
+import { evaluateDiffProposal } from "./multiDiff.js";
 
 export type AgentPhase = "Pensando" | "Escribiendo" | "Verificando";
 
@@ -59,11 +59,6 @@ function pickPhase(task: LemonWooTaskKind, fix: boolean): AgentPhase {
   return "Pensando";
 }
 
-export function extractDiffFromResponse(text: string): string | null {
-  const match = text.match(/```diff\s*([\s\S]*?)```/);
-  return match?.[1]?.trim() ?? null;
-}
-
 export async function* runAgentTask(input: RunAgentTaskInput): AsyncGenerator<AgentEvent> {
   const task = input.context.taskKind ?? pickTaskKind(input);
   const phase = pickPhase(task, Boolean(input.fixTestOutput));
@@ -100,7 +95,7 @@ export async function* runAgentTask(input: RunAgentTaskInput): AsyncGenerator<Ag
       text += piece;
       yield { type: "delta", text: piece };
     }
-    mode = task === "small-write" ? "flash" : "pro";
+    mode = routeTask(task) === "write" ? "flash" : "pro";
   } catch (error) {
     if (error instanceof DeepSeekAbortError) {
       throw error;
@@ -114,21 +109,21 @@ export async function* runAgentTask(input: RunAgentTaskInput): AsyncGenerator<Ag
     mode = chat.modelLabel;
   }
 
-  const rawDiff = extractDiffFromResponse(text);
-  const touchedFiles = rawDiff ? touchedFilesFromDiff(rawDiff) : [];
-  const hasDiff = Boolean(rawDiff);
-  const message = hasDiff
-    ? `Propuesta (todavía no aplicada):\n\n${text}`
-    : text;
+  const diff = evaluateDiffProposal(text);
+  const message = diff.warning
+    ? `${text}\n\n${diff.warning}`
+    : diff.hasDiff
+      ? `Propuesta (todavía no aplicada):\n\n${text}`
+      : text;
 
   yield { type: "message", text: message };
   yield {
     type: "done",
     result: {
       message,
-      rawDiff,
-      touchedFiles,
-      hasDiff,
+      rawDiff: diff.rawDiff,
+      touchedFiles: diff.touchedFiles,
+      hasDiff: diff.hasDiff,
       mode
     }
   };

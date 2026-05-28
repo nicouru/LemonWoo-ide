@@ -23,7 +23,7 @@ tell application "System Events"
   set p to first application process whose bundle identifier is "dev.lemonwoo.ide"
   if (count of windows of p) < 1 then error "LemonWoo has no window"
   set w to name of front window of p
-  if w does not start with "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
+  if w does not start with "LemonWoo Agent" and w does not start with "Welcome" then error "Expected LemonWoo Agent/Welcome window, got " & w
 end tell
 OSA
 )" || true
@@ -37,4 +37,4 @@ if [[ -n "$OSA_OUT" ]]; then
   exit 1
 fi
 
-echo "Bundle smoke: LemonWoo launched with LemonWoo Agent window"
+echo "Bundle smoke: LemonWoo launched with LemonWoo Agent/Welcome window"

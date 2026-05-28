@@ -60,6 +60,7 @@ describe("agent programming loop wiring", () => {
     const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
     expect(src).toContain("hasMultipleDiffBlocks");
     expect(src).toContain("Múltiples bloques diff detectados");
+    expect(src).toContain("hasDiff: event.result.hasDiff");
   });
 
   it("invokes rg only on demand", () => {
