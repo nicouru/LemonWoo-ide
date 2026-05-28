@@ -100,6 +100,30 @@ Result:
 - All commands above passed.
 - Full in-app green pass remains pending: after rebuilding and rerunning `LemonWoo.app`, the live model run stayed in `Pensando` after file reads long enough to cancel instead of claiming a pass.
 
+## v2.0 apply-to-disk hardening (2026-05-28)
+
+Follow-up in-app observation:
+
+- After a later run, LemonWoo showed changed editor buffers for `invoice.js`, `tax.js`, and `format.js`, but terminal `npm test` still read the original disk files.
+- This exposed a critical gap: `workspace.applyEdit` can update editor buffers without persisting them before TestGate/terminal checks.
+
+Fix:
+
+- `applyMultiFileDiff` now saves each touched `TextDocument` after `vscode.workspace.applyEdit`.
+- Save failure is surfaced as `No se pudo guardar <file>`.
+
+Command evidence:
+
+```bash
+pnpm --filter lemonwoo-ai test
+pnpm -r build
+```
+
+Result:
+
+- Both commands passed.
+- Full in-app cross-verified green pass is still pending; this section records the hardening needed before rerunning it.
+
 ## v1 final RC validation run (2026-05-28, main @ 7257be0)
 
 | Check | Result |
