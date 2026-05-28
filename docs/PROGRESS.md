@@ -50,7 +50,7 @@ Current stage summary:
 - Hardened `rc-check.sh` to capture and log step errors into the JSON results file, and added `pnpm package:dmg` to the pipeline.
 - Resolved space path parsing and target DMG host-architecture queries in `write-rc-report.mjs`.
 - Passed the active API key to `redactSecrets` inside `live-agent-smoke.mjs`.
-- Verified that all workspace tests (142 total), packaging runs, release audits, branding checks, and bundle launches pass cleanly.
+- Verified that all workspace tests, packaging runs, release audits, branding checks, and bundle launches pass cleanly.
 
 ## 2026-05-28 — Final RC validation and fix pass
 
