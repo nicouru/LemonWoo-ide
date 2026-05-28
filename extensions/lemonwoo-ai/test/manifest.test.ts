@@ -84,6 +84,27 @@ describe("manifest", () => {
     expect(src).toContain("vscode.window.tabGroups.close");
   });
 
+  it("re-closes welcome tabs when tabs change while agent is open", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    expect(src).toContain("onDidChangeTabs");
+    expect(src).toContain("closeWelcomeTabs");
+  });
+
+  it("does not reveal the agent panel on every tab change", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    const start = src.indexOf("onDidChangeTabs");
+    expect(start).toBeGreaterThan(-1);
+    const block = src.slice(start, start + 400);
+    expect(block).toContain("closeWelcomeTabs");
+    expect(block).not.toContain("activePanel.reveal");
+  });
+
+  it("surfaces agent panel open failures to the user", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    expect(src).toContain("openAgentPanel(context).catch");
+    expect(src).toContain("showErrorMessage");
+  });
+
   it("registers onDidReceiveMessage before setting webview.html to prevent handshake race", () => {
     const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
     const idxMessageListener = src.indexOf("panel.webview.onDidReceiveMessage");

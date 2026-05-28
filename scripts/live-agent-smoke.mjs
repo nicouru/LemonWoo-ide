@@ -11,6 +11,11 @@ if (!apiKey) {
 }
 
 const root = process.cwd();
+const distDeepseek = join(root, "packages/deepseek/dist/index.js");
+if (!existsSync(distDeepseek)) {
+  console.error("Build packages first: pnpm -r build");
+  process.exit(1);
+}
 const fixture = join(root, "fixtures", "agent-loop-ts");
 if (!existsSync(fixture)) {
   console.error("Fixture missing: fixtures/agent-loop-ts");

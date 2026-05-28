@@ -28,6 +28,11 @@ describe("local action intent", () => {
   it("ignores unrelated prompts", () => {
     expect(detectLocalActionIntent("explicame este error de typescript")).toBe("none");
   });
+
+  it("does not hijack casual localhost mentions", () => {
+    expect(detectLocalActionIntent("documentá que el API corre en http://localhost:3000")).toBe("none");
+    expect(detectLocalActionIntent("mencioná localhost en el readme")).toBe("none");
+  });
 });
 
 describe("script and package manager selection", () => {
@@ -90,6 +95,11 @@ describe("output parsing and redaction", () => {
   it("parses localhost URL from logs", () => {
     const line = "ready in 200ms: http://localhost:5173/";
     expect(parseUrlFromOutput(line)).toContain("http://localhost:5173");
+  });
+
+  it("parses localhost URL when stdout contains ANSI color codes", () => {
+    const line = "\x1B[32mready\x1B[0m at \x1B[1mhttp://localhost:4173/\x1B[0m";
+    expect(parseUrlFromOutput(line)).toBe("http://localhost:4173/");
   });
 
   it("redacts secrets in logs", () => {

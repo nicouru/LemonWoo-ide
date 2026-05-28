@@ -207,6 +207,37 @@ describe("Inline Completion Provider", () => {
     expect(result[0].insertText).toBe(" + 2;");
   });
 
+  it("strips markdown fences from ghost text", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "```typescript\n + 2;\n```" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    const result = await providerInstance.provideInlineCompletionItems(
+      document,
+      position,
+      inlineContext,
+      token
+    );
+
+    expect(result?.[0]?.insertText).toBe(" + 2;");
+  });
+
   it("cancels previous request when a new completion is triggered (debounce)", async () => {
     mockSecrets["deepseek.apiKey"] = "sk-fakekey";
 
@@ -260,8 +291,8 @@ describe("Inline Completion Provider", () => {
     expect(res2).toBeDefined();
 
     // The second request should not be aborted
-    const signal2 = chatMock.mock.calls[0][0].signal;
-    expect(signal2.aborted).toBe(false);
+    const lastCall = chatMock.mock.calls[chatMock.mock.calls.length - 1];
+    expect(lastCall[0].signal.aborted).toBe(false);
   });
 
   it("handles empty response, cancellation, and errors gracefully", async () => {
