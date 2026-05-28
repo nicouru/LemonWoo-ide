@@ -15,7 +15,15 @@ let debounceTimeout: NodeJS.Timeout | undefined;
 let cachedClient: DeepSeekClient | undefined;
 let cachedClientKey: string | undefined;
 
-export function clearClientCache(): void {
+export function resetInlineCompletionState(): void {
+  if (lastInlineAbort) {
+    lastInlineAbort.abort();
+    lastInlineAbort = undefined;
+  }
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = undefined;
+  }
   cachedClient = undefined;
   cachedClientKey = undefined;
 }
@@ -30,7 +38,11 @@ function getClient(apiKey: string): DeepSeekClient {
 }
 
 function isSensitiveFile(fsPath: string): boolean {
+  const lowercasePath = fsPath.toLowerCase();
+  const segments = lowercasePath.split(/[\\/]/);
   const basename = path.basename(fsPath).toLowerCase();
+
+  // 1. Standard credentials/configs
   if (basename === ".env" || basename.startsWith(".env.")) return true;
   if (basename === ".npmrc") return true;
   if (basename === ".yarnrc") return true;
@@ -44,6 +56,42 @@ function isSensitiveFile(fsPath: string): boolean {
     basename.endsWith(".p12")
   ) return true;
   if (basename === "secrets" || basename.startsWith("secrets.")) return true;
+
+  // 2. Newly required sensitive files
+  if (
+    basename === "credentials" ||
+    basename === "credentials.json" ||
+    basename === "credentials.yaml" ||
+    basename === "credentials.yml"
+  ) return true;
+  if (basename === "service-account.json" || basename === "service-account-key.json") return true;
+  if (basename === "kubeconfig" || basename.endsWith(".kubeconfig")) return true;
+
+  // 3. Segment-based checks (AWS, SSH, Docker)
+  const hasAws = segments.includes(".aws");
+  const hasSsh = segments.includes(".ssh");
+  const hasDocker = segments.includes(".docker");
+
+  if (hasDocker && basename === "config.json") {
+    return true;
+  }
+
+  if (hasAws || hasSsh) {
+    const awsSshBasenames = [
+      "credentials",
+      "config",
+      "authorized_keys",
+      "known_hosts",
+      "id_rsa",
+      "id_ed25519",
+      "id_dsa",
+      "id_ecdsa"
+    ];
+    if (awsSshBasenames.includes(basename)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -130,13 +178,17 @@ export function registerInlineCompletionProvider(context: vscode.ExtensionContex
       // Real debounce of 300ms before touching network
       try {
         await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
+          debounceTimeout = setTimeout(() => {
             currentAbort.signal.removeEventListener("abort", onAbort);
+            debounceTimeout = undefined;
             resolve();
           }, 300);
 
           const onAbort = () => {
-            clearTimeout(timeout);
+            if (debounceTimeout) {
+              clearTimeout(debounceTimeout);
+              debounceTimeout = undefined;
+            }
             reject(new Error("aborted"));
           };
           currentAbort.signal.addEventListener("abort", onAbort);

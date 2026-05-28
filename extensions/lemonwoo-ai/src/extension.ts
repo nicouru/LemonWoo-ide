@@ -18,7 +18,7 @@ import {
 import { gatherAgentContext } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
-import { registerInlineCompletionProvider } from "./inlineCompletion.js";
+import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
 
 const KEY_NAME = "deepseek.apiKey";
 const VIEW_TYPE = "lemonwoo.agentView";
@@ -116,6 +116,7 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     }
     if (msg.type === "clearKey") {
       await context.secrets.delete(KEY_NAME);
+      resetInlineCompletionState();
       panel.webview.postMessage({ type: "needKey" });
     }
     if (msg.type === "applyDiff") {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import * as vscode from "vscode";
-import { registerInlineCompletionProvider, clearClientCache } from "../src/inlineCompletion.js";
+import { registerInlineCompletionProvider, resetInlineCompletionState } from "../src/inlineCompletion.js";
 import { DeepSeekClient, buildMessages, DeepSeekAbortError } from "@lemonwoo/deepseek";
 
 // Mock vscode module
@@ -80,7 +80,7 @@ describe("Inline Completion Provider", () => {
       uri: { fsPath: "/workspace" }
     });
 
-    clearClientCache();
+    resetInlineCompletionState();
   });
 
   it("returns undefined and does not query DeepSeek if API key is missing", async () => {
@@ -319,13 +319,81 @@ describe("Inline Completion Provider", () => {
       chat: chatMock
     }));
 
-    clearClientCache();
+    resetInlineCompletionState();
 
     // Call twice
     await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
     await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
 
     expect(DeepSeekClient).toHaveBeenCalledTimes(1);
+  });
+
+  it("resets inline completion state (clears cache, aborts request)", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    resetInlineCompletionState();
+
+    // Completion 1 -> instantiates client
+    await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    expect(DeepSeekClient).toHaveBeenCalledTimes(1);
+
+    // Reset state
+    resetInlineCompletionState();
+
+    // Completion 2 -> instantiates new client
+    await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    expect(DeepSeekClient).toHaveBeenCalledTimes(2);
+  });
+
+  it("aborts in-flight/debounce request when resetInlineCompletionState is called", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "const x = 1;",
+      uri: { fsPath: "/workspace/src/file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
+    (DeepSeekClient as any).mockImplementation(() => ({
+      chat: chatMock
+    }));
+
+    // Trigger request
+    const p1 = providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    
+    // Wait a tiny bit for secrets.get to resolve and debounce phase to start
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Call reset state immediately
+    resetInlineCompletionState();
+
+    const res = await p1;
+    expect(res).toBeUndefined();
+    expect(chatMock).not.toHaveBeenCalled();
   });
 
   it("debounces rapid typing, resulting in a single DeepSeek call", async () => {
@@ -366,7 +434,7 @@ describe("Inline Completion Provider", () => {
     expect(chatMock).toHaveBeenCalledTimes(1);
   });
 
-  it("excludes sensitive files (.env, secrets.json, id_rsa, etc.)", async () => {
+  it("excludes sensitive files (.env, credentials, config, ssh, aws, docker, kubeconfig, service-account)", async () => {
     mockSecrets["deepseek.apiKey"] = "sk-fakekey";
 
     const sensitivePaths = [
@@ -383,7 +451,20 @@ describe("Inline Completion Provider", () => {
       "/workspace/src/cert.crt",
       "/workspace/src/cert.p12",
       "/workspace/src/secrets.json",
-      "/workspace/src/secrets.yaml"
+      "/workspace/src/secrets.yaml",
+      "/workspace/src/.aws/credentials",
+      "/workspace/src/.aws/config",
+      "/workspace/src/.ssh/config",
+      "/workspace/src/.ssh/authorized_keys",
+      "/workspace/src/credentials",
+      "/workspace/src/credentials.json",
+      "/workspace/src/credentials.yaml",
+      "/workspace/src/credentials.yml",
+      "/workspace/src/service-account.json",
+      "/workspace/src/service-account-key.json",
+      "/workspace/src/kubeconfig",
+      "/workspace/src/prod.kubeconfig",
+      "/workspace/src/.docker/config.json"
     ];
 
     const chatMock = vi.fn().mockResolvedValue({ text: "completion" });
