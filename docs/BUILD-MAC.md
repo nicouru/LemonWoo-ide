@@ -18,7 +18,15 @@ and Electron helper bundles to LemonWoo, patches the bundle identity to
 ## Commands
 
 ```bash
+# Clean install dependencies
 pnpm install
+
+# Build macOS app bundle (dist/LemonWoo.app)
 pnpm build:mac
-pnpm smoke:bundle
+
+# Verify and package the bundle into a DMG
+pnpm package:dmg
+
+# Run all checks, tests, build, and package the DMG in sequence
+pnpm release:check
 ```
