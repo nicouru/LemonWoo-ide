@@ -57,13 +57,13 @@ try {
       return existsSync(abs) ? readFileSync(abs, "utf8") : null;
     });
     if (!plan.ok) {
-      console.error(`Live smoke failed: invalid diff plan (${redactSecrets(plan.error ?? "")})`);
+      console.error(`Live smoke failed: invalid diff plan (${redactSecrets(plan.error ?? "", [apiKey])})`);
       exitCode = 1;
       process.exitCode = exitCode;
     } else {
       for (const patch of plan.patches) {
         if (!patch.ok || patch.content === undefined) {
-          console.error(`Live smoke failed: patch error (${redactSecrets(patch.error ?? "")})`);
+          console.error(`Live smoke failed: patch error (${redactSecrets(patch.error ?? "", [apiKey])})`);
           exitCode = 1;
           process.exitCode = exitCode;
           break;
@@ -72,7 +72,7 @@ try {
       }
       if (exitCode === 0) {
         const testRun = spawnSync("npm", ["test"], { cwd: workspace, encoding: "utf8" });
-        const output = redactSecrets(`${testRun.stdout ?? ""}\n${testRun.stderr ?? ""}`.trim()).slice(0, 1000);
+        const output = redactSecrets(`${testRun.stdout ?? ""}\n${testRun.stderr ?? ""}`.trim(), [apiKey]).slice(0, 1000);
         if (testRun.status !== 0) {
           console.error("Live smoke failed: tests remain red");
           console.error(output);

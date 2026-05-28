@@ -27,7 +27,14 @@ record_step() {
   first_step=0
 
   printf '    {"name":"%s","command":"%s","status":"%s","exitCode":%s}' \
-    "$name" "$command" "$status" "$exit_code" >> "$TMP_RESULTS"
+     "$name" "$command" "$status" "$exit_code" >> "$TMP_RESULTS"
+}
+
+finalize_and_exit() {
+  local exit_code="$1"
+  printf '\n  ]\n}\n' >> "$TMP_RESULTS"
+  mv "$TMP_RESULTS" "$RESULTS_PATH"
+  exit "$exit_code"
 }
 
 run_step() {
@@ -43,7 +50,7 @@ run_step() {
     local code=$?
     record_step "$name" "$command" "FAIL" "$code"
     echo "FAIL: ${name} (exit ${code})"
-    return "$code"
+    finalize_and_exit "$code"
   fi
 }
 
@@ -72,7 +79,7 @@ run_live_smoke() {
 
   record_step "$name" "$command" "FAIL" "$code"
   echo "FAIL: ${name} (exit ${code})"
-  return "$code"
+  finalize_and_exit "$code"
 }
 
 echo "========================================="
@@ -88,14 +95,14 @@ run_step "Bundle smoke" "pnpm smoke:bundle"
 run_step "V1 scope guard" "bash scripts/verify-v1-scope.sh"
 run_step "Public readiness guard" "bash scripts/verify-public-readiness.sh"
 run_step "Document consistency guard" "pnpm verify:docs"
+run_step "Package DMG" "pnpm package:dmg"
 run_step "Release artifacts verification" "bash scripts/verify-release-artifacts.sh"
 run_live_smoke
-
-printf '\n  ]\n}\n' >> "$TMP_RESULTS"
-mv "$TMP_RESULTS" "$RESULTS_PATH"
 
 echo
 echo "========================================="
 echo "LemonWoo RC check completed"
 echo "Results file: ${RESULTS_PATH}"
 echo "========================================="
+
+finalize_and_exit 0

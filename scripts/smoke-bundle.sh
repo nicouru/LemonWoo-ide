@@ -29,17 +29,24 @@ tell application id "dev.lemonwoo.ide" to activate
 delay 1
 tell application "System Events"
   set p to first application process whose bundle identifier is "dev.lemonwoo.ide"
-  set hasWindow to false
+  set hasAgentWindow to false
   repeat 10 times
     if (count of windows of p) > 0 then
-      set hasWindow to true
-      exit repeat
+      set w to name of front window of p
+      if w contains "LemonWoo Agent" then
+        set hasAgentWindow to true
+        exit repeat
+      end if
     end if
     delay 1
   end repeat
-  if not hasWindow then error "LemonWoo has no window"
-  set w to name of front window of p
-  if w does not start with "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
+  if not hasAgentWindow then
+    if (count of windows of p) > 0 then
+      error "Expected LemonWoo Agent window, got " & (name of front window of p)
+    else
+      error "LemonWoo has no window"
+    end if
+  end if
 end tell
 OSA
 )" || true

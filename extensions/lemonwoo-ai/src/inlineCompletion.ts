@@ -147,7 +147,10 @@ export function registerInlineCompletionProvider(context: vscode.ExtensionContex
           lower === "node_modules" ||
           lower === "dist" ||
           lower === "build" ||
-          lower === "out"
+          lower === "out" ||
+          lower === "keys" ||
+          lower === "certificates" ||
+          lower === "credentials"
         );
       });
 

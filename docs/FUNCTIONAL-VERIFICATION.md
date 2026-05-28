@@ -321,7 +321,7 @@ All workspace tests run and pass cleanly:
 ```bash
 pnpm -r test
 ```
-Latest hardening result: `Test Files  5 passed (5) | Tests  47 passed (47)` for the extension suite.
+Latest hardening result: all tests in the extension suite passed cleanly.
 
 ## First-run agent surface polish (2026-05-28)
 
@@ -338,14 +338,20 @@ Behavior verification:
 - With stored key, webview autofocus targets the agent prompt textarea.
 - `smoke:bundle` remains strict on front window title (`LemonWoo Agent`), so Welcome is not accepted as primary.
 
-## Final RC validation and fix pass (2026-05-28)
+## Final RC Gauntlet & Public Beta Readiness Hardening (2026-05-28)
 
-We executed the final RC validation pipeline after implementing critical startup UX and testing fixes:
-- Resolved Webview timing race via `initialized` handshake message from the Webview.
-- Prevented aggressive Welcome tab closing from closing workspace code files by ignoring local `file` scheme URIs.
-- Fixed `manifest.test.ts` relative directory path resolution in Vitest.
-- Hardened `smoke-bundle.sh` to wait in a loop for the application window to render.
-- Hardened `build-mac.sh` to force quit any running LemonWoo process before cleaning the build directory.
+We executed the final double-block RC functional gauntlet and release packaging validation pass:
+- **Welcome Tab Scheme Filter:** Refined `isWelcomeTab` to validate schemes like `vscode-remote` or `git`, avoiding closing workspace files in SSH/remote containers.
+- **Agent Cycle State Reset:** Reset `lastRawDiff`, `lastAgentText`, and `lastTouchedFiles` at the start of `runAgentCycle` to prevent stale state retention.
+- **Robust Abort Handling:** Added catches for standard `AbortError` / `DOMException` to prevent raw stack traces from leaking into the UI.
+- **AppleScript Window Search:** Updated title assertion in `smoke-bundle.sh` to use `does not contain` to properly support prepended workspace folder prefixes.
+- **Preview Intent Refinement:** Narrowed localhost regex trigger in `localActions.ts` to `/iniciar\s+localhost/i` to avoid false positives.
+- **Local Server Lifecycle Safety:** Checked `exitCode == null && signalCode == null` for process state, registered the exit handler immediately, and cleaned up processes on startup failures to prevent process/port leaks.
+- **ANSI Escape Code Filter:** Filtered ANSI color sequences from terminal stdout before parsing local URLs.
+- **Path Resolution:** Fixed Vitest test resolution in `local-actions.test.ts` to resolve relative to `import.meta.url`.
+- **Autocomplete Hardening:** Excluded `keys`, `certificates`, and `credentials` folders from inline completion and added unit tests validating the 1MB file size limit block.
+- **Branding Plist Sanitization:** Added recursive python string rebranding scripts for `Info.plist` files inside `rebrand-macos.sh` to sanitize all leftover copyright, helpbook, descriptions, and type name fields.
+- **Release Verification & Artifact QA:** Integrated `package:dmg` into the validation pipeline, resolved path space errors and version/host arch selection in `write-rc-report.mjs`, and added comprehensive Helper App plist and broad main plist scans to `verify-release-artifacts.sh`.
 
 ### Commands Executed & Results:
 
@@ -356,15 +362,15 @@ pnpm release:check
 ```
 
 Results:
-- **Workspace Build:** PASS (app bundle successfully rebuilt at `dist/LemonWoo.app`).
-- **Workspace Tests:** PASS (all workspace tests passed cleanly).
-- **Branding check:** PASS (Info.plist and product.json fields verified).
-- **Secrets check:** PASS (Zero secrets leaked).
+- **Workspace Build:** PASS (app bundle successfully rebuilt at `dist/LemonWoo.app` with all helper frameworks correctly rebranded).
+- **Workspace Tests:** PASS (all workspace tests passed cleanly, including deepseek, test-gate, agent-runtime, and extension autocomplete and server suites).
+- **Branding check:** PASS (Info.plist and product.json fields verified; no prohibited branding remains).
+- **Secrets check:** PASS (Zero secrets found).
 - **Licenses check:** PASS (All licenses compatible).
-- **Bundle smoke:** PASS (AppleScript launcher verified `LemonWoo Agent` front window).
-- **V1 scope guard:** PASS (Confirmed no MCP, Stripe, OpenTelemetry, SQLite, SQLite embeddings, multi-agent frameworks, model/provider picker).
+- **Bundle smoke:** PASS (AppleScript launcher successfully verified `LemonWoo Agent` window on launch).
+- **V1 scope guard:** PASS (Confirmed no MCP, provider picker, Stripe, vector DB, persistent memory, or out-of-scope features).
 - **Public readiness guard:** PASS (Zero local/developer/users paths leaked).
 - **Document consistency guard:** PASS (Documentation aligned).
-- **Release artifacts verification:** PASS (checksums and structures valid).
+- **Release artifacts verification:** PASS (all release deliverables, helper app plist names, identifiers, DMG, and relative sha256 checksum match verified).
 - **Live DeepSeek smoke:** SKIP (expected skip with exit 78 when `DEEPSEEK_API_KEY` is not defined).
 - **DMG Packaging:** Successful packaging of `dist/LemonWoo-0.1.0-mac-arm64.dmg` with checksum `dist/LemonWoo-0.1.0-mac-arm64.dmg.sha256`.

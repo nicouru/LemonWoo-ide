@@ -100,9 +100,12 @@ describe("output parsing and redaction", () => {
   });
 });
 
+import { fileURLToPath } from "node:url";
+
 describe("spawn safety", () => {
   it("uses spawn without shell true in localActions", () => {
-    const src = readFileSync(resolve(process.cwd(), "src/localActions.ts"), "utf8");
+    const curFile = fileURLToPath(import.meta.url);
+    const src = readFileSync(resolve(curFile, "../../src/localActions.ts"), "utf8");
     expect(src).toContain("shell: false");
   });
 });

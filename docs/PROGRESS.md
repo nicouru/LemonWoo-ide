@@ -36,6 +36,22 @@ Current stage summary:
 - **Public/release docs:** ready.
 - **Next decision:** run `pnpm rc:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available, then decide whether to tag the first public v1 RC.
 
+## 2026-05-28 — Final RC Gauntlet & Public Beta Readiness Hardening
+
+- Refined the Welcome tab closing filter in `isWelcomeTab` to support remote workspace schemes (e.g. `vscode-remote`, `git`), preventing accidental file closures.
+- Fixed an agent state leak in `runAgentCycle` by resetting the proposed diff and touched files on loop startup.
+- Handled standard DOM abort errors in `runAgentCycle` to prevent stack traces from surfacing in the UI.
+- Updated `smoke-bundle.sh` to check for window title contains "LemonWoo Agent" instead of starts with, adapting to prepended workspace folders.
+- Refined localhost preview intent matching to prevent greedy hijacking of standard localhost mentions.
+- Secured the local server lifecycle process checks (via exitCode/signalCode), registered exit handlers immediately, and prevented process leaks.
+- Stripped ANSI color sequences from preview logs and resolved Vitest relative test paths.
+- Added `keys`, `certificates`, and `credentials` folder exclusions to native Tab autocomplete and added size limit validation tests.
+- Rebranded remaining unbranded Info.plist fields (Icon, Copyright, Camera/Microphone descriptions, CFBundleTypeName) and helper sub-identifiers using Python recursive plist editing scripts.
+- Hardened `rc-check.sh` to capture and log step errors into the JSON results file, and added `pnpm package:dmg` to the pipeline.
+- Resolved space path parsing and target DMG host-architecture queries in `write-rc-report.mjs`.
+- Passed the active API key to `redactSecrets` inside `live-agent-smoke.mjs`.
+- Verified that all workspace tests, packaging runs, release audits, branding checks, and bundle launches pass cleanly.
+
 ## 2026-05-28 — Final RC validation and fix pass
 
 - Resolved a critical Webview timing race where `ensureKey` was called synchronously on startup before the Webview HTML had fully loaded and set up its message listener. Registered `onDidReceiveMessage` before setting `webview.html = renderHtml()`, and added an `initialized` handshake message from the Webview script to the extension, triggering state setup only when the Webview is ready.

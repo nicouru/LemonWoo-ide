@@ -40,7 +40,8 @@ if [[ ! -d "$SOURCE_APP" ]]; then
   exit 1
 fi
 
-/bin/cp -R "$SOURCE_APP" "$APP_DIR"
+/bin/mkdir -p "$APP_DIR"
+/bin/cp -R "$SOURCE_APP/" "$APP_DIR"
 
 bash "$ROOT/apps/desktop/rebrand-macos.sh" "$APP_DIR" "$ROOT/apps/desktop/product.json"
 
@@ -56,8 +57,7 @@ EXT_TARGET="$APP_DIR/Contents/Resources/app/extensions/lemonwoo-ai"
 /bin/rm -rf "$EXT_TARGET"
 /bin/mkdir -p "$EXT_TARGET"
 /bin/cp "$ROOT/extensions/lemonwoo-ai/package.json" "$EXT_TARGET/"
-/bin/mkdir -p "$EXT_TARGET/dist"
-/bin/cp -R "$ROOT/extensions/lemonwoo-ai/dist/"* "$EXT_TARGET/dist/"
+/bin/cp -R "$ROOT/extensions/lemonwoo-ai/dist" "$EXT_TARGET/"
 
 /usr/bin/xattr -cr "$APP_DIR" || true
 /usr/bin/codesign --force --deep --sign - "$APP_DIR"

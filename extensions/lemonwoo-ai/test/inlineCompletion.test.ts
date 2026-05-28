@@ -545,4 +545,51 @@ describe("Inline Completion Provider", () => {
     res = await providerInstance.provideInlineCompletionItems(docMarkdown, position, inlineContext, token);
     expect(res).toBeUndefined();
   });
+
+  it("returns undefined if file exceeds 1MB limit", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const document: any = {
+      getText: () => "a".repeat(1024 * 1024 + 1),
+      uri: { fsPath: "/workspace/src/large-file.ts", scheme: "file" },
+      offsetAt: () => 12,
+      languageId: "typescript"
+    };
+    const position = new vscode.Position(0, 12);
+    const inlineContext: any = {};
+    const token: any = {
+      onCancellationRequested: vi.fn(),
+      isCancellationRequested: false
+    };
+
+    const res = await providerInstance.provideInlineCompletionItems(document, position, inlineContext, token);
+    expect(res).toBeUndefined();
+    expect(DeepSeekClient).not.toHaveBeenCalled();
+  });
+
+  it("excludes files in keys, certificates, and credentials directories", async () => {
+    mockSecrets["deepseek.apiKey"] = "sk-fakekey";
+    const excludedDirs = ["keys", "certificates", "credentials"];
+    for (const dir of excludedDirs) {
+      const document: any = {
+        getText: () => "const x = 1;",
+        uri: { fsPath: `/workspace/${dir}/pkg/index.ts`, scheme: "file" },
+        offsetAt: () => 0,
+        languageId: "typescript"
+      };
+      const position = new vscode.Position(0, 0);
+      const inlineContext: any = {};
+      const token: any = {
+        onCancellationRequested: vi.fn(),
+        isCancellationRequested: false
+      };
+
+      const res = await providerInstance.provideInlineCompletionItems(
+        document,
+        position,
+        inlineContext,
+        token
+      );
+      expect(res).toBeUndefined();
+    }
+  });
 });

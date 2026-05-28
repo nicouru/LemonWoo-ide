@@ -121,6 +121,47 @@ PY
     FAILED=1
   fi
 
+  # Audit Helper apps
+  for helper in "LemonWoo Helper" "LemonWoo Helper (GPU)" "LemonWoo Helper (Plugin)" "LemonWoo Helper (Renderer)"; do
+    HELPER_APP_PATH="$APP_PATH/Contents/Frameworks/${helper}.app"
+    if [[ ! -d "$HELPER_APP_PATH" ]]; then
+      echo "FAIL: Helper app ${helper}.app is missing"
+      FAILED=1
+    else
+      HELPER_PLIST="$HELPER_APP_PATH/Contents/Info.plist"
+      if [[ ! -f "$HELPER_PLIST" ]]; then
+        echo "FAIL: Helper app ${helper}.app/Contents/Info.plist is missing"
+        FAILED=1
+      else
+        helper_suffix=".helper"
+        if [[ "$helper" == *"Helper (GPU)"* ]]; then
+          helper_suffix=".helper.GPU"
+        elif [[ "$helper" == *"Helper (Plugin)"* ]]; then
+          helper_suffix=".helper.Plugin"
+        elif [[ "$helper" == *"Helper (Renderer)"* ]]; then
+          helper_suffix=".helper.Renderer"
+        fi
+
+        HELPER_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$HELPER_PLIST")
+        if [[ "$HELPER_ID" != "dev.lemonwoo.ide$helper_suffix" ]]; then
+          echo "FAIL: Helper ${helper} CFBundleIdentifier is '$HELPER_ID', expected 'dev.lemonwoo.ide$helper_suffix'"
+          FAILED=1
+        fi
+
+        if /usr/bin/plutil -p "$HELPER_PLIST" 2>/dev/null | /usr/bin/grep -Eiq '(vscodium|cursor|visual studio code)'; then
+          echo "FAIL: Prohibited branding strings found in Helper ${helper} Info.plist"
+          FAILED=1
+        fi
+      fi
+    fi
+  done
+
+  # Broad branding check on main info plist
+  if /usr/bin/plutil -p "$APP_PLIST" 2>/dev/null | /usr/bin/grep -Eiq '(vscodium|cursor|visual studio code)'; then
+    echo "FAIL: Prohibited branding strings found in main Info.plist"
+    FAILED=1
+  fi
+
   # Verify codesign
   echo "Verifying code signature of $APP_PATH..."
   if ! codesign --verify --deep --strict --verbose=2 "$APP_PATH" 2>&1; then
