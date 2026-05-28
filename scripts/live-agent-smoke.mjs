@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 
 const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
 if (!apiKey) {
-  console.error("SKIP: falta DEEPSEEK_API_KEY");
+  console.error("SKIP: falta DEEPSEEK_API_KEY (exportá la variable y reintentá)");
   process.exit(78);
 }
 
@@ -30,14 +30,42 @@ const runAgentTaskOnce = runtimeMod.runAgentTaskOnce;
 const planMultiFileApply = runtimeMod.planMultiFileApply;
 const countDiffBlocks = runtimeMod.countDiffBlocks;
 
+async function assertLiveModel(client, task, expectedLabel) {
+  const result = await client.chat({
+    task,
+    build: {
+      systemPrompt: "Reply with one short word only. No markdown.",
+      userInput: `Reply with exactly: ${expectedLabel}_OK`
+    },
+    maxTokens: 32
+  });
+  const text = redactSecrets(result.text.trim(), [apiKey]);
+  if (!text) {
+    console.error(`Live smoke failed: ${task} returned empty response`);
+    process.exit(1);
+  }
+  if (result.modelLabel !== expectedLabel) {
+    console.error(
+      `Live smoke failed: ${task} expected modelLabel=${expectedLabel}, got ${result.modelLabel} (${result.modelId})`
+    );
+    process.exit(1);
+  }
+  console.log(
+    `Live ${expectedLabel}: ok model=${result.modelId} chars=${text.length} preview=${text.slice(0, 40)}`
+  );
+}
+
 let tmp;
 let exitCode = 0;
 try {
+  const client = new DeepSeekClient({ apiKey });
+  await assertLiveModel(client, "tab", "flash");
+  await assertLiveModel(client, "agent", "pro");
+
   tmp = mkdtempSync(join(tmpdir(), "lemonwoo-live-smoke-"));
   const workspace = join(tmp, "agent-loop-ts");
   cpSync(fixture, workspace, { recursive: true });
 
-  const client = new DeepSeekClient({ apiKey });
   const result = await runAgentTaskOnce({
     client,
     context: {
@@ -84,8 +112,8 @@ try {
           exitCode = 1;
           process.exitCode = exitCode;
         } else {
-          console.log("Live smoke passed: agent proposed diff and tests are green.");
-          console.log(output);
+          console.log("Live agent loop passed: diff applied and fixture tests are green.");
+          console.log(redactSecrets(output, [apiKey]));
         }
       }
     }

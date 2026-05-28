@@ -54,6 +54,37 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 
 ---
 
+## 3b. Loop de programación con fixture (repetible)
+
+Usá el fixture del repo para validar el flujo completo sin depender de un proyecto propio:
+
+1. **Preparar workspace**
+   - En LemonWoo: `Archivo` → `Abrir carpeta...` → elegí `fixtures/agent-loop-ts` dentro del clon del repo.
+2. **Key y foco**
+   - Pegá `DEEPSEEK_API_KEY` en el panel y conectá.
+   - Sin key: foco en el input de API key. Con key: foco en el prompt del agente.
+3. **Pedir cambio**
+   - Prompt sugerido: `Arreglá el test que falla en sum con un patch mínimo.`
+   - Esperá streaming y un único bloque `diff`.
+4. **Aplicar y verificar**
+   - Clic en **Aplicar diff** → confirmá que `src/sum.ts` cambió en disco.
+   - Clic en **Correr tests** (TestGate) → debe pasar o mostrar salida útil si falla.
+5. **Corregir con agente (si falla)**
+   - Si TestGate falla, usá **Corregir con agente** y confirmá que no reutiliza un diff viejo de la tarea anterior.
+6. **Segunda tarea**
+   - Pedí otro cambio pequeño distinto y confirmá que el diff previo no se mezcla.
+7. **Editor usable**
+   - Abrí un archivo real del fixture (por ejemplo `src/sum.ts`) y cambiá de tab: **LemonWoo Agent no debe robar foco** automáticamente.
+8. **Automatizado (opcional)**
+   ```bash
+   pnpm -r build
+   export DEEPSEEK_API_KEY=sk-...
+   pnpm smoke:agent:live
+   ```
+   Sin key exportada, el mismo comando debe terminar con `SKIP: falta DEEPSEEK_API_KEY` (exit 78).
+
+---
+
 ## 4. Servidor de Vista Previa (Local Preview Server)
 
 1. **Levantar Preview**:

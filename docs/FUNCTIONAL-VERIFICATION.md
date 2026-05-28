@@ -9,6 +9,23 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 
+## v1 live beta closeout (2026-05-28)
+
+`pnpm smoke:agent:live` (after `pnpm -r build`):
+
+| Condition | Expected |
+| --- | --- |
+| `DEEPSEEK_API_KEY` unset | exit **78**, stderr contains `SKIP: falta DEEPSEEK_API_KEY` |
+| Key set | Flash ping (`task: tab`, `modelLabel: flash`), Pro ping (`task: agent`, `modelLabel: pro`), then agent-loop fixture diff + green `npm test` in temp workspace |
+
+Evidence rules:
+
+- Logs must not contain the raw API key (`redactSecrets` in script).
+- Do not document **PASS** for live smoke unless a real-key run succeeded in that environment.
+- `runAgentTask` escalates write-routed tasks via `shouldEscalateToPro` (covered in `packages/agent-runtime/test/runAgentTask.test.ts`).
+
+Manual operator checklist: `docs/QA-MANUAL-ES.md` §3b.
+
 ## Build-first evidence
 
 ```bash

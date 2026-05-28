@@ -90,6 +90,15 @@ describe("manifest", () => {
     expect(src).toContain("closeWelcomeTabs");
   });
 
+  it("reveals agent panel only from openAgentPanel, not the tab watcher", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    expect(src).toContain("async function openAgentPanel");
+    expect(src).toMatch(/openAgentPanel[\s\S]{0,800}activePanel\.reveal/);
+    const watcherStart = src.indexOf("onDidChangeTabs");
+    const watcherBlock = src.slice(watcherStart, watcherStart + 400);
+    expect(watcherBlock).not.toContain("activePanel.reveal");
+  });
+
   it("does not reveal the agent panel on every tab change", () => {
     const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
     const start = src.indexOf("onDidChangeTabs");

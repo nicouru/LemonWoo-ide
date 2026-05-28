@@ -5,7 +5,7 @@
  */
 import { DeepSeekClient } from "@lemonwoo/deepseek";
 import { DeepSeekAbortError } from "@lemonwoo/deepseek";
-import { routeTask, type LemonWooTaskKind } from "@lemonwoo/deepseek";
+import { routeTask, shouldEscalateToPro, type LemonWooTaskKind } from "@lemonwoo/deepseek";
 import { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
 import { evaluateDiffProposal } from "./multiDiff.js";
 
@@ -60,7 +60,7 @@ function pickPhase(task: LemonWooTaskKind, fix: boolean): AgentPhase {
 }
 
 export async function* runAgentTask(input: RunAgentTaskInput): AsyncGenerator<AgentEvent> {
-  const task = input.context.taskKind ?? pickTaskKind(input);
+  let task = input.context.taskKind ?? pickTaskKind(input);
   const phase = pickPhase(task, Boolean(input.fixTestOutput));
   yield { type: "phase", phase };
 
@@ -109,7 +109,43 @@ export async function* runAgentTask(input: RunAgentTaskInput): AsyncGenerator<Ag
     mode = chat.modelLabel;
   }
 
-  const diff = evaluateDiffProposal(text);
+  let diff = evaluateDiffProposal(text);
+  if (
+    routeTask(task) === "write" &&
+    shouldEscalateToPro({
+      task,
+      touchedFiles: diff.touchedFiles.length,
+      testsFailed: Boolean(input.fixTestOutput),
+      hasNonTrivialError: Boolean(input.fixTestOutput)
+    })
+  ) {
+    task = "agent";
+    yield { type: "phase", phase: pickPhase(task, Boolean(input.fixTestOutput)) };
+    text = "";
+    try {
+      for await (const piece of input.client.chatStream({
+        task,
+        signal: input.signal,
+        build
+      })) {
+        text += piece;
+        yield { type: "delta", text: piece };
+      }
+      mode = "pro";
+    } catch (error) {
+      if (error instanceof DeepSeekAbortError) {
+        throw error;
+      }
+      const chat = await input.client.chat({
+        task,
+        signal: input.signal,
+        build
+      });
+      text = chat.text;
+      mode = chat.modelLabel;
+    }
+    diff = evaluateDiffProposal(text);
+  }
   const message = diff.warning
     ? `${text}\n\n${diff.warning}`
     : diff.hasDiff
