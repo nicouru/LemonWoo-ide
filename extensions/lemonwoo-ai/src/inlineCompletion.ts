@@ -28,6 +28,12 @@ export function resetInlineCompletionState(): void {
   cachedClientKey = undefined;
 }
 
+function stripCompletionFences(text: string): string {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```[\w-]*\n([\s\S]*?)\n```$/);
+  return fenced ? fenced[1] : text;
+}
+
 function getClient(apiKey: string): DeepSeekClient {
   if (cachedClient && cachedClientKey === apiKey) {
     return cachedClient;
@@ -245,7 +251,7 @@ ${suffixText}`;
           return undefined;
         }
 
-        const completionText = result.text;
+        const completionText = stripCompletionFences(result.text);
         if (!completionText || !completionText.trim()) {
           return undefined;
         }

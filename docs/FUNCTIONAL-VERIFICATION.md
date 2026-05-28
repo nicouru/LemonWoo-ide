@@ -338,6 +338,17 @@ Behavior verification:
 - With stored key, webview autofocus targets the agent prompt textarea.
 - `smoke:bundle` remains strict on front window title (`LemonWoo Agent`), so Welcome is not accepted as primary.
 
+## v1 functional dogfood hardening (2026-05-28)
+
+Automated coverage added or tightened in this pass:
+
+- `extensions/lemonwoo-ai/test/manifest.test.ts`: tab-change welcome guard; agent open error surfacing.
+- `extensions/lemonwoo-ai/test/inlineCompletion.test.ts`: debounce uses the last in-flight call; markdown fence stripping.
+- `extensions/lemonwoo-ai/test/local-actions.test.ts`: casual localhost mentions stay `none`; ANSI-colored stdout URL parsing.
+- `packages/test-gate/test/test-gate.test.ts`: typecheck-before-lint order, destructive script rejection, empty-script failure.
+
+Manual beta checklist: `docs/QA-MANUAL-ES.md`.
+
 ## Final RC Gauntlet & Public Beta Readiness Hardening (2026-05-28)
 
 We executed the final double-block RC functional gauntlet and release packaging validation pass:

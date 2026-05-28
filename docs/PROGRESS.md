@@ -6,7 +6,7 @@ LemonWoo is now in **v1 release-candidate validation**.
 
 Repository state:
 
-- `main` includes the merged RC distribution hardening and native Flash Tab completion work (`7fed966`).
+- `main` includes merged RC distribution hardening, native Flash Tab completion, and first-run agent surface polish (through PR #12 on `origin/main`).
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:
@@ -70,6 +70,16 @@ Current stage summary:
 - Added extension manifest tests to lock this behavior (startup surface and autofocus contracts).
 
 Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
+
+## 2026-05-28 — v1 functional dogfood hardening (in progress)
+
+- Welcome tabs are re-closed when tab groups change while LemonWoo Agent is open.
+- Agent panel open failures surface via `showErrorMessage` instead of silent `void`.
+- TestGate runs `typecheck` before `lint`, blocks destructive script bodies, and fails clearly when no scripts match.
+- Local preview intent no longer hijacks casual `localhost` mentions; preview logs with ANSI colors still parse URLs; failed starts SIGTERM then SIGKILL orphaned processes.
+- Tab autocomplete strips markdown code fences from model output.
+- `pickTaskKind` no longer routes normal agent prompts containing “inline” to Flash.
+- Live smoke script requires `pnpm -r build` artifacts before importing packages.
 
 ## 2026-05-28 — Document consistency guardrail (v1 RC hardening)
 

@@ -37,9 +37,8 @@ const PREVIEW_PATTERNS = [
   /quiero\s+ver\s+la\s+p[aá]gina/i,
   /abr[ií]\s+preview/i,
   /iniciar\s+localhost/i,
-  /url\s+local/i,
-  /ver\s+web/i,
-  /abrila?\s+en\s+el\s+navegador/i
+  /abrila?\s+en\s+el\s+navegador/i,
+  /quiero\s+ver\s+(la\s+)?(app|página|sitio|proyecto)/i
 ];
 
 const DANGEROUS = /(npm\s+install|pnpm\s+install|yarn\s+install|npx\s+|sudo\s+|rm\s+-|curl\s+\S+\s*\|\s*sh|git\s+push)/i;
@@ -148,22 +147,40 @@ export async function ensurePreviewServer(
     server.url = url;
     return { reused: false, url, logs: tail(logs, 10) };
   } catch (error) {
-    child.kill("SIGTERM");
+    killPreviewProcess(child);
     runningServers.delete(workspace);
     throw error;
   }
 }
 
+function killPreviewProcess(proc: ChildProcess): void {
+  if (!proc.pid) return;
+  try {
+    proc.kill("SIGTERM");
+  } catch {
+    // ignore
+  }
+  setTimeout(() => {
+    if (proc.exitCode == null && proc.signalCode == null) {
+      try {
+        proc.kill("SIGKILL");
+      } catch {
+        // ignore
+      }
+    }
+  }, 3000).unref();
+}
+
 export function stopPreviewServer(workspace: string): boolean {
   const existing = runningServers.get(workspace);
   if (!existing) return false;
-  existing.process.kill("SIGTERM");
+  killPreviewProcess(existing.process);
   runningServers.delete(workspace);
   return true;
 }
 
 export function stopAllPreviewServers(): void {
-  for (const s of runningServers.values()) s.process.kill("SIGTERM");
+  for (const s of runningServers.values()) killPreviewProcess(s.process);
   runningServers.clear();
 }
 

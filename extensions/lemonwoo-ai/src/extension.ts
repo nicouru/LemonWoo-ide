@@ -42,7 +42,16 @@ export function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(openAgent);
   context.subscriptions.push(registerInlineCompletionProvider(context));
-  void openAgentPanel(context);
+  const welcomeWatcher = vscode.window.tabGroups.onDidChangeTabs(() => {
+    if (activePanel) {
+      void closeWelcomeTabs();
+      void activePanel.reveal(vscode.ViewColumn.One);
+    }
+  });
+  context.subscriptions.push(welcomeWatcher);
+  void openAgentPanel(context).catch((err) => {
+    void vscode.window.showErrorMessage(`LemonWoo Agent: ${String(err)}`);
+  });
 }
 
 async function openAgentPanel(context: vscode.ExtensionContext) {

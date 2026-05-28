@@ -47,7 +47,7 @@ function pickTaskKind(input: RunAgentTaskInput): LemonWooTaskKind {
   const t = input.context.userTask.toLowerCase();
   if (/(refactor|migr)/i.test(t)) return "refactor";
   if (/(debug|depur|error|falla|fix|corrige)/i.test(t)) return "debug";
-  if (/(tab|autocomplete|inline|complet)/i.test(t) && !/(test|verific|debug)/i.test(t)) {
+  if (/(^|\s)(tab|autocomplete|inline\s+edit|completado\s+tab)(\s|$)/i.test(t)) {
     return "small-write";
   }
   return "agent";
