@@ -1,0 +1,10 @@
+{
+  "nameShort": "LemonWoo",
+  "nameLong": "LemonWoo",
+  "applicationName": "lemonwoo",
+  "dataFolderName": ".lemonwoo",
+  "serverApplicationName": "lemonwoo-server",
+  "urlProtocol": "lemonwoo",
+  "reportIssueUrl": "https://example.invalid/lemonwoo/issues",
+  "licenseUrl": "https://example.invalid/lemonwoo/license"
+}

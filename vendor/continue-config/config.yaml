@@ -1,0 +1,11 @@
+name: LemonWoo Continue Config
+models:
+  - name: DeepSeek Flash
+    provider: openai
+    model: deepseek-v4-flash
+    apiBase: https://api.deepseek.com
+tabAutocompleteModel:
+  name: DeepSeek Flash
+  provider: openai
+  model: deepseek-v4-flash
+  apiBase: https://api.deepseek.com
