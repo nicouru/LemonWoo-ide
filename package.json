@@ -1,0 +1,23 @@
+{
+  "name": "lemonwoo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LemonWoo IDE v1 monorepo",
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint --if-present",
+    "typecheck": "pnpm -r typecheck --if-present",
+    "check:branding": "bash scripts/check-branding.sh",
+    "check:secrets": "bash scripts/check-secrets.sh",
+    "check:licenses": "bash scripts/check-licenses.sh",
+    "smoke:bundle": "bash scripts/smoke-bundle.sh",
+    "build:mac": "bash apps/desktop/build-mac.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

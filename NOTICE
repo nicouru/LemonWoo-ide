@@ -1,0 +1,7 @@
+LemonWoo bundles or interoperates with open-source software, including:
+
+- Code-OSS / VSCodium base build pipeline
+- Continue (optional integration path)
+- OpenCode SDK integration path
+
+See `docs/UPSTREAMS.md` and `scripts/check-licenses.sh` for current v1 tracking.

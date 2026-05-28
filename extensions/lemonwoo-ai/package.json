@@ -1,0 +1,36 @@
+{
+  "name": "lemonwoo-ai",
+  "displayName": "LemonWoo AI",
+  "description": "Single-panel LemonWoo Agent for DeepSeek v1",
+  "version": "0.1.0",
+  "publisher": "lemonwoo",
+  "type": "module",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:lemonwoo.openAgent"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "lemonwoo.openAgent",
+        "title": "LemonWoo: Open Agent"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/vscode": "^1.95.0"
+  }
+}

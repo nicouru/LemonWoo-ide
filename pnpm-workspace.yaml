@@ -1,0 +1,6 @@
+packages:
+  - "apps/*"
+  - "extensions/*"
+  - "packages/*"
+allowBuilds:
+  esbuild: true
