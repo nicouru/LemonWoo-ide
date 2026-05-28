@@ -17,6 +17,7 @@ describe("runAgentTask fallback", () => {
     } as unknown as DeepSeekClient;
 
     const result = await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: {
         userTask: "arreglá el test",
@@ -47,6 +48,7 @@ describe("runAgentTask fallback", () => {
     } as unknown as DeepSeekClient;
 
     await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "fix tests" },
       fixTestOutput: "FAIL expected 2 got 1"
@@ -72,6 +74,7 @@ describe("runAgentTask fallback", () => {
     const deltas: string[] = [];
     let done = false;
     for await (const event of runAgentTask({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "saluda" }
     })) {
@@ -112,6 +115,7 @@ describe("runAgentTask fallback", () => {
       })
     } as unknown as DeepSeekClient;
     const result = await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "multi diff" }
     });
@@ -135,6 +139,7 @@ describe("runAgentTask fallback", () => {
       })
     } as unknown as DeepSeekClient;
     const result = await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "single diff" }
     });
@@ -158,18 +163,22 @@ describe("runAgentTask fallback", () => {
       }) as unknown as DeepSeekClient;
 
     const tab = await runAgentTaskOnce({
+      singleShot: true,
       client: makeClient(),
       context: { userTask: "tab", taskKind: "tab" }
     });
     const inline = await runAgentTaskOnce({
+      singleShot: true,
       client: makeClient(),
       context: { userTask: "inline", taskKind: "inline-edit" }
     });
     const small = await runAgentTaskOnce({
+      singleShot: true,
       client: makeClient(),
       context: { userTask: "small", taskKind: "small-write" }
     });
     const agent = await runAgentTaskOnce({
+      singleShot: true,
       client: makeClient(),
       context: { userTask: "agent", taskKind: "agent" }
     });
@@ -194,6 +203,7 @@ describe("runAgentTask fallback", () => {
       })
     } as unknown as DeepSeekClient;
     const result = await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "x" }
     });
@@ -220,6 +230,7 @@ describe("runAgentTask fallback", () => {
     } as unknown as DeepSeekClient;
 
     await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "Revisá el componente inline del formulario y proponé un patch mínimo." }
     });
@@ -245,6 +256,7 @@ describe("runAgentTask fallback", () => {
     } as unknown as DeepSeekClient;
 
     await runAgentTaskOnce({
+      singleShot: true,
       client: mockClient,
       context: { userTask: "small patch", taskKind: "small-write" }
     });
@@ -267,6 +279,7 @@ describe("runAgentTask fallback", () => {
 
     await expect(
       runAgentTaskOnce({
+        singleShot: true,
         client: mockClient,
         context: { userTask: "x" }
       })

@@ -7,15 +7,17 @@ import {
   DeepSeekRateLimitError,
   redactSecrets
 } from "@lemonwoo/deepseek";
-import { runTestGate } from "@lemonwoo/test-gate";
-import { runAgentTask } from "@lemonwoo/agent-runtime";
+import { runTestGate, runTestGateStructured } from "@lemonwoo/test-gate";
+import { runAgentTask, isSafeRelPath, type AgentRuntimeAdapters } from "@lemonwoo/agent-runtime";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   detectLocalActionIntent,
   ensurePreviewServer,
   stopAllPreviewServers,
   stopPreviewServer
 } from "./localActions.js";
-import { gatherAgentContext } from "./agentContext.js";
+import { gatherAgentContext, runRg } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
 import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
@@ -265,6 +267,40 @@ async function handleFixWithAgent(context: vscode.ExtensionContext, panel: vscod
   await runAgentCycle(context, panel, apiKey, workspace, originalTask, lastTestOutput);
 }
 
+function buildAgentAdapters(
+  workspace: string,
+  signal: AbortSignal,
+  changedFiles: () => string[]
+): AgentRuntimeAdapters {
+  return {
+    readFile: async (relPath) => {
+      if (!isSafeRelPath(relPath)) return null;
+      const abs = join(workspace, relPath);
+      if (!existsSync(abs)) return null;
+      return readFileSync(abs, "utf8");
+    },
+    searchWorkspace: async (query) => {
+      const raw = await runRg(workspace, query, signal, 20);
+      return redactSecrets(raw)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 20);
+    },
+    runTestGate: async (files) => {
+      const list = files.length ? files : changedFiles();
+      const result = await runTestGateStructured(workspace, list, signal);
+      return {
+        ok: result.ok,
+        output: result.output,
+        commands: result.commands,
+        durationMs: result.durationMs,
+        truncated: result.truncated
+      };
+    }
+  };
+}
+
 async function runAgentCycle(
   context: vscode.ExtensionContext,
   panel: vscode.WebviewPanel,
@@ -295,11 +331,14 @@ async function runAgentCycle(
     });
     const client = new DeepSeekClient({ apiKey });
 
+    const adapters = buildAgentAdapters(workspace, signal, () => lastTouchedFiles);
+
     for await (const event of runAgentTask({
       client,
       context: snapshot,
       signal,
-      fixTestOutput
+      fixTestOutput,
+      adapters
     })) {
       if (event.type === "phase") {
         panel.webview.postMessage({ type: "status", state: event.phase satisfies AgentState });
@@ -307,6 +346,13 @@ async function runAgentCycle(
       if (event.type === "delta") {
         lastStreamed += event.text;
         panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed) });
+      }
+      if (event.type === "tool" && event.phase === "done" && event.summary) {
+        lastStreamed += `\n• ${event.tool}: ${event.summary.slice(0, 120)}\n`;
+        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed) });
+      }
+      if (event.type === "warning") {
+        panel.webview.postMessage({ type: "info", text: event.text });
       }
       if (event.type === "message") {
         lastAgentText = redactSecrets(event.text);
