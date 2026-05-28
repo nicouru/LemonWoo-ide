@@ -6,7 +6,7 @@ LemonWoo is now in **v1 release-candidate validation**.
 
 Repository state:
 
-- `main` includes merged RC distribution hardening, native Flash Tab completion, and first-run agent surface polish (through PR #12 on `origin/main`).
+- `main` @ `bc2c680` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), native Flash Tab completion, and first-run agent surface polish.
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:
@@ -23,7 +23,7 @@ Compared with the original LemonWoo specification:
 | TestGate verification/fix loop | Done | TestGate runs selected scripts; failed output can be reinjected through **Corregir con agente**. |
 | Local preview/dev-server action | Done | Prompt intent can start/reuse/stop a local server and show a concrete URL. |
 | Release packaging and public guardrails | Done | DMG packaging, release checks, scope guard, public readiness, QA and troubleshooting docs are present. |
-| Live DeepSeek vertical slice | Gated / pending real key | `smoke:agent:live` exists and exits 78 with `SKIP: falta DEEPSEEK_API_KEY` when no key is available. Needs one real-key run before calling v1 fully proven. |
+| Live DeepSeek vertical slice | Gated / pending real key | `pnpm smoke:agent:live` pings Flash + Pro + agent-loop fixture with key; exit 78 SKIP without key. Do not claim live API verified without a real-key PASS. |
 | Tab autocomplete as editor feature | Done | Registered as native VS Code inline completion provider (`vscode.languages.registerInlineCompletionItemProvider`) using DeepSeek Flash, with full context limit checks, debounce/cancellation, and error safety. |
 | MCP, multi-agent, persistent memory, Stripe, OpenTelemetry, browser agents | Explicitly out of v1 | Guardrails enforce this scope. These remain v1.1+ roadmap only. |
 
@@ -34,7 +34,14 @@ Current stage summary:
 - **Agent programming loop:** implemented and tested with mocks/fixtures.
 - **Live API proof:** pending `DEEPSEEK_API_KEY` run.
 - **Public/release docs:** ready.
-- **Next decision:** run `pnpm rc:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available, then decide whether to tag the first public v1 RC.
+- **Next decision:** run `pnpm smoke:agent:live` with a real `DEEPSEEK_API_KEY`, then tag the first public v1 RC if green.
+
+## 2026-05-28 — v1 live beta closeout (in progress)
+
+- `scripts/live-agent-smoke.mjs` now pings Flash (`tab`) and Pro (`agent`) before the agent-loop fixture; redacts secrets; requires `pnpm -r build`; cleans temp dirs in `finally`.
+- `runAgentTask` wires `shouldEscalateToPro` for write-routed tasks (multi-file / test failure) with a single Pro retry.
+- `docs/QA-MANUAL-ES.md` adds a repeatable fixture-based programming loop checklist.
+- Live smoke in CI/local without key: **SKIP exit 78** (documented; not RC failure).
 
 ## 2026-05-28 — Final RC Gauntlet & Public Beta Readiness Hardening
 
@@ -278,7 +285,7 @@ pnpm release:check
 
 Result (2026-05-28):
 
-- 98 tests passed across workspace (`deepseek` 61, `lemonwoo-ai` 26, `agent-runtime` 11).
+- Workspace tests green via `pnpm -r test` (see CI/local logs for current counts).
 - `dist/LemonWoo.app` rebuilt and smoke-launched with `LemonWoo Agent` window.
 - `dist/LemonWoo-0.1.0-mac-arm64.dmg` packaged successfully.
 
@@ -362,4 +369,4 @@ pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
 Result:
 
 - Native inline completion branch was merged to `main`.
-- `lemonwoo-ai` extension suite: 47 tests passed after the final hardening pass.
+- `lemonwoo-ai` extension suite: green via `pnpm --filter lemonwoo-ai test`.

@@ -200,6 +200,57 @@ describe("runAgentTask fallback", () => {
     expect(result.message).toContain("buffered response");
   });
 
+  it("routes normal agent prompts mentioning inline to Pro (agent task)", async () => {
+    let task = "";
+    const mockClient = {
+      chatStream: async function* (args: { task: string }) {
+        task = args.task;
+        yield "sin diff";
+      },
+      chat: async (args: { task: string }) => {
+        task = args.task;
+        return {
+          text: "sin diff",
+          mode: "think" as const,
+          modelLabel: "pro" as const,
+          modelId: "deepseek-v4-pro",
+          usedAlias: false
+        };
+      }
+    } as unknown as DeepSeekClient;
+
+    await runAgentTaskOnce({
+      client: mockClient,
+      context: { userTask: "Revisá el componente inline del formulario y proponé un patch mínimo." }
+    });
+    expect(task).toBe("agent");
+  });
+
+  it("escalates write-routed small-write to Pro when multiple files are touched", async () => {
+    const calls: string[] = [];
+    const multiFileDiff =
+      "```diff\n--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-a\n+a\n--- a/src/b.ts\n+++ b/src/b.ts\n@@ -1 +1 @@\n-c\n+d\n```";
+    const mockClient = {
+      chatStream: async function* (args: { task: string }) {
+        calls.push(args.task);
+        yield args.task === "small-write" ? multiFileDiff : "ok";
+      },
+      chat: async () => ({
+        text: "unused",
+        mode: "think" as const,
+        modelLabel: "pro" as const,
+        modelId: "deepseek-v4-pro",
+        usedAlias: false
+      })
+    } as unknown as DeepSeekClient;
+
+    await runAgentTaskOnce({
+      client: mockClient,
+      context: { userTask: "small patch", taskKind: "small-write" }
+    });
+    expect(calls).toEqual(["small-write", "agent"]);
+  });
+
   it("propagates abort errors (no fallback)", async () => {
     const mockClient = {
       chatStream: async function* () {
