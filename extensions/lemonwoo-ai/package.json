@@ -12,6 +12,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onCommand:lemonwoo.openAgent"
   ],
   "main": "./dist/extension.js",

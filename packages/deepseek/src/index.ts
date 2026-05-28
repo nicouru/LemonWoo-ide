@@ -68,6 +68,16 @@ export function shouldEscalateToPro(args: {
   );
 }
 
+function wireAbortSignal(controller: AbortController, secondary?: AbortSignal): AbortSignal {
+  if (!secondary) return controller.signal;
+  if (secondary.aborted) {
+    controller.abort("aborted");
+    return controller.signal;
+  }
+  secondary.addEventListener("abort", () => controller.abort("aborted"), { once: true });
+  return controller.signal;
+}
+
 export class DeepSeekClient {
   private readonly client: OpenAI;
   private readonly apiKey: string;
@@ -101,7 +111,7 @@ export class DeepSeekClient {
     const timeoutMs = route === "think" ? PRO_TIMEOUT_MS : FLASH_TIMEOUT_MS;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort("timeout"), timeoutMs);
-    const mergedSignal = args.signal ?? controller.signal;
+    const mergedSignal = wireAbortSignal(controller, args.signal);
     try {
       return await this.withRetry(async () => {
         const completion = await this.client.chat.completions.create(

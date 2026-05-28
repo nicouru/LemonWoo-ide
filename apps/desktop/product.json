@@ -4,6 +4,7 @@
   "applicationName": "lemonwoo",
   "dataFolderName": ".lemonwoo",
   "serverApplicationName": "lemonwoo-server",
+  "darwinBundleIdentifier": "dev.lemonwoo.ide",
   "urlProtocol": "lemonwoo",
   "reportIssueUrl": "https://example.invalid/lemonwoo/issues",
   "licenseUrl": "https://example.invalid/lemonwoo/license"

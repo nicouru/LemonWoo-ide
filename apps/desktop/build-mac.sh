@@ -41,7 +41,7 @@ fi
 bash "$ROOT/apps/desktop/rebrand-macos.sh" "$APP_DIR" "$ROOT/apps/desktop/product.json"
 
 echo "Building bundled extension..."
-(cd "$ROOT" && pnpm --filter @lemonwoo/deepseek build && pnpm --filter @lemonwoo/test-gate build && pnpm --filter lemonwoo-ai build)
+(cd "$ROOT" && pnpm --filter @lemonwoo/deepseek build && pnpm --filter @lemonwoo/test-gate build && pnpm --filter @lemonwoo/agent-runtime build && pnpm --filter lemonwoo-ai build)
 
 EXT_TARGET="$APP_DIR/Contents/Resources/app/extensions/lemonwoo-ai"
 /bin/rm -rf "$EXT_TARGET"
@@ -51,5 +51,6 @@ EXT_TARGET="$APP_DIR/Contents/Resources/app/extensions/lemonwoo-ai"
 /bin/cp -R "$ROOT/extensions/lemonwoo-ai/dist/"* "$EXT_TARGET/dist/"
 
 /usr/bin/xattr -cr "$APP_DIR" || true
+/usr/bin/codesign --force --deep --sign - "$APP_DIR"
 
 echo "Built: $APP_DIR"
