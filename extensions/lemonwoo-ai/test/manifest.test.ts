@@ -90,6 +90,15 @@ describe("manifest", () => {
     expect(src).toContain("closeWelcomeTabs");
   });
 
+  it("does not reveal the agent panel on every tab change", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    const start = src.indexOf("onDidChangeTabs");
+    expect(start).toBeGreaterThan(-1);
+    const block = src.slice(start, start + 400);
+    expect(block).toContain("closeWelcomeTabs");
+    expect(block).not.toContain("activePanel.reveal");
+  });
+
   it("surfaces agent panel open failures to the user", () => {
     const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
     expect(src).toContain("openAgentPanel(context).catch");

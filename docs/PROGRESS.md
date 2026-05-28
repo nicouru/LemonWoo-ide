@@ -73,7 +73,7 @@ Do not start v1.1 work yet. The next meaningful work is validation and stabiliza
 
 ## 2026-05-28 — v1 functional dogfood hardening (in progress)
 
-- Welcome tabs are re-closed when tab groups change while LemonWoo Agent is open.
+- Welcome tabs are re-closed when tab groups change while LemonWoo Agent is open (without stealing editor focus via `reveal` on every tab change).
 - Agent panel open failures surface via `showErrorMessage` instead of silent `void`.
 - TestGate runs `typecheck` before `lint`, blocks destructive script bodies, and fails clearly when no scripts match.
 - Local preview intent no longer hijacks casual `localhost` mentions; preview logs with ANSI colors still parse URLs; failed starts SIGTERM then SIGKILL orphaned processes.

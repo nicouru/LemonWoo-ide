@@ -45,7 +45,6 @@ export function activate(context: vscode.ExtensionContext) {
   const welcomeWatcher = vscode.window.tabGroups.onDidChangeTabs(() => {
     if (activePanel) {
       void closeWelcomeTabs();
-      void activePanel.reveal(vscode.ViewColumn.One);
     }
   });
   context.subscriptions.push(welcomeWatcher);
