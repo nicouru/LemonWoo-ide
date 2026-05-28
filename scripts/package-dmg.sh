@@ -33,12 +33,19 @@ codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 # 5. Create the DMG with hdiutil
 DMG_NAME="LemonWoo-${VERSION}-mac-arm64.dmg"
 DMG_PATH="dist/${DMG_NAME}"
+STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/lemonwoo-dmg.XXXXXX")"
+trap 'rm -rf "$STAGE_DIR"' EXIT
 
 echo "Creating DMG at ${DMG_PATH}..."
 # Remove any existing DMG at that path first to avoid conflicts
 rm -f "$DMG_PATH"
 
-hdiutil create -volname "LemonWoo" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+# hdiutil copies the contents of -srcfolder into the volume root. Use a
+# staging directory so the mounted DMG contains LemonWoo.app, not Contents/.
+ditto "$APP_PATH" "$STAGE_DIR/LemonWoo.app"
+ln -s /Applications "$STAGE_DIR/Applications"
+
+hdiutil create -volname "LemonWoo" -srcfolder "$STAGE_DIR" -ov -format UDZO "$DMG_PATH"
 
 # 6. Verify the DMG
 echo "Verifying DMG integrity..."

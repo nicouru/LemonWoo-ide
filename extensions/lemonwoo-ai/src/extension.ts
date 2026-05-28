@@ -17,7 +17,7 @@ const MODEL_FLASH = "deepseek-v4-flash";
 const ALIAS_PRO = "deepseek-reasoner";
 const ALIAS_FLASH = "deepseek-chat";
 
-type AgentState = "Pensando" | "Escribiendo" | "Verificando" | "Listo";
+type AgentState = "Pensando" | "Escribiendo" | "Verificando" | "Sirviendo" | "Listo";
 type AgentRoute = { modelKey: "pro" | "flash"; state: AgentState };
 
 let activePanel: vscode.WebviewPanel | undefined;
@@ -124,7 +124,7 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
       panel.webview.postMessage({ type: "error", text: "Abrí una carpeta para levantar preview local." });
       return;
     }
-    panel.webview.postMessage({ type: "status", state: "Verificando" satisfies AgentState });
+    panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
     try {
       const preview = await ensurePreviewServer(workspace);
       panel.webview.postMessage({
@@ -133,9 +133,9 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
         url: preview.url,
         logs: preview.logs.join("\n")
       });
+      panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
     } catch (error) {
       panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
-    } finally {
       panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
     }
     return;
@@ -522,6 +522,11 @@ function renderHtml(): string {
     function applyDiff(){ vscode.postMessage({type:'applyDiff', diff: last}); }
     function runTestGate(){ vscode.postMessage({type:'runTestGate'}); }
     function stopServer(){ vscode.postMessage({type:'stopServer'}); }
+    function escapeHtml(value){
+      return String(value || '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[ch]);
+    }
     window.addEventListener('message', (event) => {
       const m = event.data;
       if (m.type === 'status') {
@@ -536,7 +541,8 @@ function renderHtml(): string {
       }
       if (m.type === 'serverReady') {
         const header = m.reused ? 'Servidor ya activo.' : 'Servidor iniciado.';
-        document.getElementById('out').textContent = header + '\\nURL: ' + m.url + '\\n\\n' + (m.logs || '');
+        const safeUrl = escapeHtml(m.url);
+        document.getElementById('out').innerHTML = escapeHtml(header) + '\\nURL: <a href="' + safeUrl + '">' + safeUrl + '</a>\\n\\n' + escapeHtml(m.logs || '');
         document.getElementById('stopServer').style.display='inline-block';
       }
       if (m.type === 'serverStopped') {

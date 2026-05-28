@@ -45,4 +45,11 @@ describe("manifest", () => {
     expect(src).toContain("type:'stop'");
     expect(src).toContain("activeAbort?.abort()");
   });
+
+  it("shows serving state and a clickable preview URL", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("\"Sirviendo\"");
+    expect(src).toContain("type: \"serverReady\"");
+    expect(src).toContain("<a href=");
+  });
 });
