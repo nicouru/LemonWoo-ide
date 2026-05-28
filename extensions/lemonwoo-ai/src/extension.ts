@@ -1,5 +1,12 @@
 import * as vscode from "vscode";
-import { DeepSeekClient, redactSecrets } from "@lemonwoo/deepseek";
+import {
+  DeepSeekAbortError,
+  DeepSeekAuthError,
+  DeepSeekClient,
+  DeepSeekNetworkError,
+  DeepSeekRateLimitError,
+  redactSecrets
+} from "@lemonwoo/deepseek";
 import { runTestGate } from "@lemonwoo/test-gate";
 import { runAgentTask } from "@lemonwoo/agent-runtime";
 import {
@@ -25,6 +32,7 @@ let lastTouchedFiles: string[] = [];
 let lastTestOutput = "";
 let lastTestFailed = false;
 let lastUserTask = "";
+let lastStreamed = "";
 
 export function activate(context: vscode.ExtensionContext) {
   registerTextEditorTracking(context);
@@ -78,9 +86,31 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
         panel.webview.postMessage({ type: "error", text: "Pegá una API key válida." });
         return;
       }
-      await context.secrets.store(KEY_NAME, key);
-      panel.webview.postMessage({ type: "ready" });
-      panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+      panel.webview.postMessage({ type: "status", state: "Pensando" satisfies AgentState });
+      panel.webview.postMessage({ type: "info", text: "Conectando DeepSeek..." });
+      try {
+        const client = new DeepSeekClient({ apiKey: key });
+        const check = await client.validateKey();
+        if (check.status !== "valid") {
+          panel.webview.postMessage({ type: "error", text: mapDeepSeekConnectMessage(check.status) });
+          panel.webview.postMessage({ type: "needKey" });
+          panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+          return;
+        }
+        await context.secrets.store(KEY_NAME, key);
+        panel.webview.postMessage({ type: "ready" });
+        panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+      } catch (error) {
+        panel.webview.postMessage({
+          type: "error",
+          text:
+            error instanceof DeepSeekAuthError
+              ? "Key inválida."
+              : "Sin red o DeepSeek no disponible."
+        });
+        panel.webview.postMessage({ type: "needKey" });
+        panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+      }
     }
     if (msg.type === "clearKey") {
       await context.secrets.delete(KEY_NAME);
@@ -104,6 +134,22 @@ async function ensureKey(context: vscode.ExtensionContext, panel: vscode.Webview
 
 async function getApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
   return await context.secrets.get(KEY_NAME);
+}
+
+function hasSingleDiffBlock(text: string): boolean {
+  const matches = [...text.matchAll(/```diff[\s\S]*?```/g)];
+  return matches.length === 1;
+}
+
+function hasMultipleDiffBlocks(text: string): boolean {
+  return [...text.matchAll(/```diff[\s\S]*?```/g)].length > 1;
+}
+
+function mapDeepSeekConnectMessage(status: string): string {
+  if (status === "invalid") return "Key inválida.";
+  if (status === "rate-limited") return "Rate limit, reintentando.";
+  if (status === "models-unavailable") return "DeepSeek no devolvió modelos compatibles.";
+  return "Sin red o DeepSeek no disponible.";
 }
 
 async function handleRun(context: vscode.ExtensionContext, panel: vscode.WebviewPanel, prompt: string) {
@@ -187,6 +233,7 @@ async function runAgentCycle(
   }
 
   try {
+    lastStreamed = "";
     const snapshot = await gatherAgentContext(workspace, prompt, {
       signal,
       editor: getPreferredTextEditor()
@@ -202,6 +249,10 @@ async function runAgentCycle(
       if (event.type === "phase") {
         panel.webview.postMessage({ type: "status", state: event.phase satisfies AgentState });
       }
+      if (event.type === "delta") {
+        lastStreamed += event.text;
+        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed) });
+      }
       if (event.type === "message") {
         lastAgentText = redactSecrets(event.text);
         lastRawDiff = event.text.includes("```diff") ? event.text : null;
@@ -213,20 +264,32 @@ async function runAgentCycle(
         panel.webview.postMessage({
           type: "result",
           text: lastAgentText,
-          hasDiff: event.result.hasDiff
+          hasDiff: event.result.hasDiff && hasSingleDiffBlock(event.result.message)
         });
+        if (event.result.hasDiff && hasSingleDiffBlock(event.result.message)) {
+          panel.webview.postMessage({ type: "info", text: "Diff listo para revisar." });
+        }
+        if (event.result.hasDiff && hasMultipleDiffBlocks(event.result.message)) {
+          panel.webview.postMessage({
+            type: "error",
+            text: "Se detectaron múltiples bloques diff; enviá una sola propuesta diff para aplicar."
+          });
+        }
       }
     }
     panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
   } catch (error) {
-    const text = String(error);
-    if (text.includes("AbortError") || text.includes("aborted")) {
+    if (error instanceof DeepSeekAbortError) {
       panel.webview.postMessage({ type: "error", text: "Tarea cancelada." });
+    } else if (error instanceof DeepSeekAuthError) {
+      panel.webview.postMessage({ type: "needKey" });
+      panel.webview.postMessage({ type: "error", text: "Key inválida." });
+    } else if (error instanceof DeepSeekRateLimitError) {
+      panel.webview.postMessage({ type: "error", text: "Rate limit, reintentando." });
+    } else if (error instanceof DeepSeekNetworkError) {
+      panel.webview.postMessage({ type: "error", text: "Sin red o DeepSeek no disponible." });
     } else {
-      if (/401|unauthorized|invalid.?key/i.test(text)) {
-        panel.webview.postMessage({ type: "needKey" });
-      }
-      panel.webview.postMessage({ type: "error", text: redactSecrets(text) });
+      panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
     }
     panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
   } finally {
@@ -241,10 +304,17 @@ async function handleApplyDiff(panel: vscode.WebviewPanel, raw: string) {
     return;
   }
   const diffSource = lastRawDiff ?? raw;
-  if (!diffSource.includes("--- ")) {
+  if (!diffSource.trim() || !diffSource.includes("--- ")) {
     panel.webview.postMessage({
       type: "error",
       text: "No hay diff multi-archivo para aplicar. Pedile al agente un bloque ```diff."
+    });
+    return;
+  }
+  if (hasMultipleDiffBlocks(diffSource)) {
+    panel.webview.postMessage({
+      type: "error",
+      text: "Múltiples bloques diff detectados. Dejá sólo uno para aplicar con seguridad."
     });
     return;
   }
@@ -280,6 +350,9 @@ async function handleTestGate(panel: vscode.WebviewPanel) {
       ok: result.ok
     });
     panel.webview.postMessage({ type: "fixAgent", show: !result.ok });
+    if (!result.ok) {
+      panel.webview.postMessage({ type: "info", text: "Tests fallaron, podés corregir con agente." });
+    }
   } catch (error) {
     const text = String(error);
     if (text.includes("AbortError") || text.includes("aborted")) {
@@ -369,6 +442,15 @@ function renderHtml(): string {
         document.getElementById('out').textContent = m.text;
         document.getElementById('apply').style.display = m.hasDiff ? 'inline-block' : 'none';
         document.getElementById('tests').style.display = 'inline-block';
+      }
+      if (m.type === 'stream') {
+        last = m.text;
+        document.getElementById('out').textContent = m.text;
+        document.getElementById('apply').style.display = 'none';
+      }
+      if (m.type === 'info') {
+        const prev = document.getElementById('out').textContent || '';
+        document.getElementById('out').textContent = (prev ? prev + '\\n' : '') + m.text;
       }
       if (m.type === 'serverReady') {
         const header = m.reused ? 'Servidor ya activo.' : 'Servidor iniciado.';

@@ -8,6 +8,7 @@ export {
 export { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
 export {
   extractDiffText,
+  countDiffBlocks,
   parseMultiFileDiff,
   planMultiFileApply,
   applyPatchToFile,

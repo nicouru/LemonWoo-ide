@@ -27,11 +27,12 @@ Esta guía describe los problemas más frecuentes que pueden surgir durante el u
 - **Solución:**
   1. Ve a la consola de DeepSeek (`platform.deepseek.com`) y genera una nueva API key.
   2. Asegúrate de tener saldo de uso (crédito) activo en tu cuenta.
-  3. Pega la nueva clave en la UI de LemonWoo y guárdala.
+  3. Pega la nueva clave en la UI de LemonWoo y presiona **Conectar**.
+  4. Si la clave es inválida, LemonWoo mostrará `Key inválida.` y no la guardará.
 
 ### Error 429 (Rate Limit Exceeded)
 - **Causa:** Has superado el límite de peticiones por minuto (RPM) o por día (RPD) que DeepSeek impone a tu nivel de cuenta.
-- **Solución:** Espera unos minutos antes de volver a consultar al agente. Si estás usando una cuenta gratuita o de nivel bajo, considera recargar saldo para acceder a límites más altos.
+- **Solución:** Espera unos minutos antes de volver a consultar al agente. LemonWoo muestra `Rate limit, reintentando.` cuando detecta esta situación.
 
 ### No puedo guardar la API key
 - **Causa:** Permisos de escritura denegados en la carpeta de configuraciones de usuario de LemonWoo.
@@ -57,6 +58,28 @@ Esta guía describe los problemas más frecuentes que pueden surgir durante el u
      lsof -i :3000
      ```
      Si hay un proceso, puedes matarlo con `kill -9 <PID>`.
+
+### El streaming se corta o no aparece incremental
+- **Causa:** red inestable o stream no disponible temporalmente.
+- **Solución:** LemonWoo cae automáticamente a respuesta buffered en el mismo request. Reintenta la tarea si la salida quedó incompleta.
+
+### El botón Stop no detiene la tarea
+- **Causa:** operación local colgada o request ya finalizado.
+- **Solución:** vuelve a presionar **Detener**, espera estado `Listo`, y relanza con **Reintentar**.
+- Si persiste, abre Developer Tools y revisa errores de abort/cancelación.
+
+### No puedo aplicar el diff (archivo cambió)
+- **Causa:** el contexto del archivo ya no coincide con el hunk propuesto.
+- **Solución:** pide al agente un diff nuevo sobre el estado actual del archivo.
+
+### TestGate falla por dependencias no instaladas
+- **Síntoma:** errores tipo `command not found`, módulos faltantes o scripts inexistentes.
+- **Solución:** instala dependencias del proyecto (`pnpm install` / `npm install` / `yarn`) y ejecuta Verificar de nuevo.
+
+### Live smoke salta por falta de key
+- **Síntoma:** `SKIP: falta DEEPSEEK_API_KEY`.
+- **Significado:** bloqueo externo esperado, no fallo del producto.
+- **Solución:** exporta `DEEPSEEK_API_KEY` y vuelve a ejecutar `pnpm smoke:agent:live`.
 
 ---
 

@@ -27,7 +27,9 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 2. **BYOK (DeepSeek Key)**:
    - En el panel del agente verás un campo para ingresar tu API key de DeepSeek.
    - Pega tu clave de DeepSeek (debe comenzar con `sk-`).
-   - Haz clic en **Guardar** o presiona Enter.
+   - Haz clic en **Conectar**.
+   - Debes ver `Conectando DeepSeek...` y luego estado listo.
+   - Si la key es incorrecta, la app debe mostrar `Key inválida.` y no guardarla.
    - Cierra y vuelve a abrir LemonWoo para verificar que la clave sigue guardada y no tienes que volver a pegarla.
 
 ---
@@ -76,6 +78,11 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 2. Mientras está escribiendo, haz clic en el botón **Stop** (Detener) en la UI.
 3. El agente debe detener inmediatamente la generación y el estado debe volver a listo.
 
+### Probar streaming visible:
+1. Pide una tarea que requiera explicación y patch.
+2. Verifica que la salida aparece de forma incremental (no solo al final).
+3. Presiona **Detener** y confirma que dejan de llegar tokens.
+
 ---
 
 ## 6. Verificación de la Simplicidad de la Interfaz
@@ -85,3 +92,15 @@ Recorre el editor y los menús para confirmar que no se muestran característica
 - **NO debe haber selectores de proveedor** (Stripe, Anthropic, etc.).
 - **NO debe haber configuraciones avanzadas de MCP** (Model Context Protocol).
 - La interfaz debe mantenerse limpia y enfocada únicamente en el chat de agente local y la edición de código.
+
+---
+
+## 7. Escenarios de falla recomendados
+
+- **Key inválida**: confirmar mensaje claro y no persistencia.
+- **Rate limit**: confirmar mensaje `Rate limit, reintentando.`.
+- **Streaming cortado**: el sistema debe caer a respuesta buffered sin romper la sesión.
+- **Stop no responde**: confirmar cancelación real y retorno a `Listo`.
+- **Diff no aplica porque cambió el archivo**: debe mostrar error claro sin aplicar parcial.
+- **TestGate falla por dependencias no instaladas**: debe mostrar salida y habilitar corrección con agente.
+- **Live smoke sin key**: `pnpm smoke:agent:live` debe devolver `SKIP: falta DEEPSEEK_API_KEY` (exit 78).

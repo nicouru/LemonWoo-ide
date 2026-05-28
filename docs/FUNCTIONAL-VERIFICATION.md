@@ -221,3 +221,56 @@ pnpm check:branding
 pnpm check:secrets
 pnpm smoke:bundle
 ```
+
+## Live DeepSeek Agent UX Pass
+
+Commands for this pass:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm check:licenses
+pnpm smoke:bundle
+bash scripts/verify-v1-scope.sh
+bash scripts/verify-public-readiness.sh
+bash scripts/verify-release-artifacts.sh
+pnpm smoke:agent:live
+```
+
+Live smoke gate behavior:
+
+- If `DEEPSEEK_API_KEY` is missing, `pnpm smoke:agent:live` exits `78` with:
+  - `SKIP: falta DEEPSEEK_API_KEY`
+- This is documented as an external gating condition, not a pass.
+
+Result in this run:
+
+```text
+$ pnpm smoke:agent:live
+SKIP: falta DEEPSEEK_API_KEY
+exit_code=78
+```
+
+Release pipeline:
+
+```bash
+pnpm release:check
+```
+
+Result:
+
+- Completed successfully (tests, build, checks, bundle smoke, DMG packaging).
+
+Manual LemonWoo.app vertical slice:
+
+1. Abrir `LemonWoo.app`.
+2. Pegar key DeepSeek y conectar (con validación real).
+3. Abrir `fixtures/agent-loop-ts`.
+4. Pedir: `Arreglá el test que falla en sum`.
+5. Ver streaming incremental en el panel.
+6. Aplicar diff.
+7. Ejecutar Verificar.
+8. Si falla, usar Corregir con agente.
+9. Confirmar test verde.

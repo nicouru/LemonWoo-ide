@@ -24,7 +24,13 @@ export interface MultiApplyResult {
 
 const DIFF_FENCE_RE = /```diff\s*([\s\S]*?)```/g;
 
+export function countDiffBlocks(raw: string): number {
+  return [...raw.matchAll(DIFF_FENCE_RE)].filter((m) => Boolean(m[1]?.trim())).length;
+}
+
 export function extractDiffText(raw: string): string {
+  const blocks = countDiffBlocks(raw);
+  if (blocks > 1) return "";
   const fences: string[] = [];
   for (const match of raw.matchAll(DIFF_FENCE_RE)) {
     if (match[1]?.trim()) fences.push(match[1].trim());

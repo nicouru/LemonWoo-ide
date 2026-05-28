@@ -169,3 +169,41 @@ Result (2026-05-28):
 - Repo tree: `repoFiles.ts` keeps fixed workspace root for paths like `src/sum.ts`.
 - Fix loop: `lastUserTask` preserved for **Corregir con agente**.
 - Documented `runAgentTask` as v1 single-shot fallback (not dynamic tool-calling).
+
+## 2026-05-28 — Live DeepSeek agent UX hardening
+
+- Onboarding key path now validates against DeepSeek before storing in `SecretStorage`.
+  - Success path: stores key only on `validateKey.status === valid`.
+  - Failure path: `Key inválida.` / `Sin red o DeepSeek no disponible.` without storing.
+- Added visible incremental agent streaming in single panel via `runAgentTask` `delta` events.
+  - Falls back to buffered response if stream path fails.
+  - Stop keeps real abort behavior with no further token updates.
+- Improved UX messaging without adding UI complexity:
+  - `Conectando DeepSeek...`
+  - `Rate limit, reintentando.`
+  - `Diff listo para revisar.`
+  - `Tests fallaron, podés corregir con agente.`
+- Diff/apply hardening:
+  - Rejects multiple fenced diff blocks as unsafe ambiguity.
+  - Keeps path traversal and `.git` protections intact.
+  - Does not enable apply on empty/non-diff responses.
+- Added live smoke script `scripts/live-agent-smoke.mjs` + root script `smoke:agent:live`.
+  - Gate behavior: exits 78 with `SKIP: falta DEEPSEEK_API_KEY` if key is missing.
+  - Uses temp copy of `fixtures/agent-loop-ts`; never mutates original fixture.
+- Updated QA/Troubleshooting docs for real-world failure cases (invalid key, rate limit, streaming cut, stop behavior, diff mismatch, TestGate deps, live smoke skip).
+
+Executed checks for this block:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm check:licenses
+pnpm smoke:bundle
+bash scripts/verify-v1-scope.sh
+bash scripts/verify-public-readiness.sh
+bash scripts/verify-release-artifacts.sh
+pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
+pnpm release:check
+```
