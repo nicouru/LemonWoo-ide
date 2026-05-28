@@ -321,7 +321,7 @@ All workspace tests run and pass cleanly:
 ```bash
 pnpm -r test
 ```
-Latest hardening result: `Test Files  5 passed (5) | Tests  47 passed (47)` for the extension suite.
+Latest hardening result: all tests in the extension suite passed cleanly.
 
 ## First-run agent surface polish (2026-05-28)
 
@@ -363,7 +363,7 @@ pnpm release:check
 
 Results:
 - **Workspace Build:** PASS (app bundle successfully rebuilt at `dist/LemonWoo.app` with all helper frameworks correctly rebranded).
-- **Workspace Tests:** PASS (all 142 workspace tests passed cleanly, including deepseek, test-gate, agent-runtime, and extension autocomplete and server suites).
+- **Workspace Tests:** PASS (all workspace tests passed cleanly, including deepseek, test-gate, agent-runtime, and extension autocomplete and server suites).
 - **Branding check:** PASS (Info.plist and product.json fields verified; no prohibited branding remains).
 - **Secrets check:** PASS (Zero secrets found).
 - **Licenses check:** PASS (All licenses compatible).

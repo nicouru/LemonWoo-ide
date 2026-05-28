@@ -99,10 +99,10 @@ run_step "Package DMG" "pnpm package:dmg"
 run_step "Release artifacts verification" "bash scripts/verify-release-artifacts.sh"
 run_live_smoke
 
-finalize_and_exit 0
-
 echo
 echo "========================================="
 echo "LemonWoo RC check completed"
 echo "Results file: ${RESULTS_PATH}"
 echo "========================================="
+
+finalize_and_exit 0
