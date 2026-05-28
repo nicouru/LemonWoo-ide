@@ -2,6 +2,7 @@ import { evaluateDiffProposal } from "./multiDiff.js";
 import { isSafeRelPath } from "./multiDiff.js";
 import type { AgentRuntimeAdapters, AgentToolRequest, AgentToolResult, RuntimeLimits } from "./contracts.js";
 import { boundOutput, redactToolOutput } from "./redactTool.js";
+import { classifyTerminalCommand, parseTerminalTimeoutMs } from "./terminalSafety.js";
 
 export interface ToolExecutionContext {
   adapters: AgentRuntimeAdapters;
@@ -120,6 +121,124 @@ export async function executeTool(
       const text = request.args.text ?? request.args.summary ?? "";
       const bounded = boundOutput(redactToolOutput(text), limits.maxToolOutputChars);
       return { ok: true, tool: "summarize", output: bounded.text, truncated: bounded.truncated };
+    }
+
+    case "run_terminal": {
+      const command = (request.args.command ?? "").trim();
+      if (!command) return fail("run_terminal", "Missing command.");
+      const classification = classifyTerminalCommand(command);
+      const cwd = (request.args.cwd ?? ".").trim() || ".";
+      if (!isSafeRelPath(cwd) && cwd !== ".") {
+        return fail("run_terminal", "Rejected cwd (workspace-relative only).");
+      }
+      if (classification.policy === "block") {
+        return {
+          ...fail("run_terminal", classification.reason ?? "Command blocked."),
+          warning: classification.reason
+        };
+      }
+      if (classification.policy === "confirm") {
+        return {
+          ok: false,
+          tool: "run_terminal",
+          output: classification.reason ?? "Command requires confirmation.",
+          requiresConfirmation: true,
+          warning: classification.reason
+        };
+      }
+      if (!adapters.runTerminal) {
+        return fail("run_terminal", "Terminal adapter not available (extension must provide runTerminal).");
+      }
+      const result = await adapters.runTerminal({
+        command,
+        cwd,
+        timeoutMs: String(parseTerminalTimeoutMs(request.args.timeoutMs)),
+        reason: request.args.reason
+      });
+      const bounded = boundOutput(redactToolOutput(result.output), limits.maxToolOutputChars);
+      return {
+        ok: result.ok,
+        tool: "run_terminal",
+        output: bounded.text,
+        truncated: bounded.truncated,
+        exitCode: result.exitCode,
+        timedOut: result.timedOut,
+        requiresConfirmation: result.requiresConfirmation,
+        warning: result.warning
+      };
+    }
+
+    case "verify_files_exist": {
+      const paths = (request.args.paths ?? "")
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (!paths.length) return fail("verify_files_exist", "Missing paths.");
+      for (const p of paths) {
+        if (!isSafeRelPath(p)) {
+          return fail("verify_files_exist", `Rejected path: ${p}`);
+        }
+      }
+      if (!adapters.verifyFilesExist) {
+        return fail("verify_files_exist", "verifyFilesExist adapter not available.");
+      }
+      const result = await adapters.verifyFilesExist(paths);
+      const summary = result.ok
+        ? `All ${result.present.length} file(s) present: ${result.present.join(", ")}`
+        : `Missing: ${result.missing.join(", ")}; present: ${result.present.join(", ") || "(none)"}`;
+      const bounded = boundOutput(redactToolOutput(summary), limits.maxToolOutputChars);
+      return {
+        ok: result.ok,
+        tool: "verify_files_exist",
+        output: bounded.text,
+        truncated: bounded.truncated,
+        present: result.present,
+        missing: result.missing
+      };
+    }
+
+    case "start_preview_server": {
+      if (!adapters.startPreviewServer) {
+        return fail("start_preview_server", "Preview adapter not available.");
+      }
+      const result = await adapters.startPreviewServer({
+        command: request.args.command,
+        port: request.args.port,
+        cwd: request.args.cwd,
+        reason: request.args.reason
+      });
+      const lines = [
+        result.ok ? "Preview server ready." : "Preview server failed.",
+        result.url ? `URL: ${result.url}` : "",
+        result.reused ? "(reused existing server)" : "",
+        result.output ?? "",
+        result.warning ?? ""
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const bounded = boundOutput(redactToolOutput(lines), limits.maxToolOutputChars);
+      return {
+        ok: result.ok,
+        tool: "start_preview_server",
+        output: bounded.text,
+        truncated: bounded.truncated,
+        url: result.url,
+        warning: result.warning
+      };
+    }
+
+    case "stop_preview_server": {
+      if (!adapters.stopPreviewServer) {
+        return fail("stop_preview_server", "Preview adapter not available.");
+      }
+      const result = await adapters.stopPreviewServer();
+      const bounded = boundOutput(redactToolOutput(result.output ?? ""), limits.maxToolOutputChars);
+      return {
+        ok: result.ok,
+        tool: "stop_preview_server",
+        output: bounded.text,
+        truncated: bounded.truncated
+      };
     }
 
     default:

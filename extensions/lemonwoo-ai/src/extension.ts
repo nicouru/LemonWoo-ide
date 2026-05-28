@@ -21,11 +21,23 @@ import { gatherAgentContext, runRg } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
 import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
+import { DEEPSEEK_SECRET_KEY, getDeepSeekKeyFromSecretStorage } from "./deepSeekSecrets.js";
+import { runTerminalInWorkspace } from "./terminalAdapter.js";
+import { verifyFilesInWorkspace } from "./fileVerify.js";
+import { startPreviewForWorkspace, stopPreviewForWorkspace } from "./previewAdapter.js";
+import { registerHarnessDiagnosticCommand } from "./harnessDiagnostic.js";
 
-const KEY_NAME = "deepseek.apiKey";
+const KEY_NAME = DEEPSEEK_SECRET_KEY;
 const VIEW_TYPE = "lemonwoo.agentView";
 
-type AgentState = "Pensando" | "Escribiendo" | "Verificando" | "Sirviendo" | "Listo";
+type AgentState =
+  | "Pensando"
+  | "Escribiendo"
+  | "Verificando"
+  | "Sirviendo"
+  | "Ejecutando comando"
+  | "Levantando servidor"
+  | "Listo";
 
 let activePanel: vscode.WebviewPanel | undefined;
 let activeAbort: AbortController | undefined;
@@ -44,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(openAgent);
   context.subscriptions.push(registerInlineCompletionProvider(context));
+  registerHarnessDiagnosticCommand(context);
   const welcomeWatcher = vscode.window.tabGroups.onDidChangeTabs(() => {
     if (activePanel) {
       void closeWelcomeTabs();
@@ -187,7 +200,7 @@ async function ensureKey(context: vscode.ExtensionContext, panel: vscode.Webview
 }
 
 async function getApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
-  return await context.secrets.get(KEY_NAME);
+  return await getDeepSeekKeyFromSecretStorage(context);
 }
 
 function hasSingleDiffBlock(text: string): boolean {
@@ -270,8 +283,10 @@ async function handleFixWithAgent(context: vscode.ExtensionContext, panel: vscod
 function buildAgentAdapters(
   workspace: string,
   signal: AbortSignal,
-  changedFiles: () => string[]
+  changedFiles: () => string[],
+  apiKey?: string
 ): AgentRuntimeAdapters {
+  const secrets = apiKey ? [apiKey] : [];
   return {
     readFile: async (relPath) => {
       if (!isSafeRelPath(relPath)) return null;
@@ -281,7 +296,7 @@ function buildAgentAdapters(
     },
     searchWorkspace: async (query) => {
       const raw = await runRg(workspace, query, signal, 20);
-      return redactSecrets(raw)
+      return redactSecrets(raw, secrets)
         .split("\n")
         .map((line) => line.trim())
         .filter(Boolean)
@@ -297,7 +312,11 @@ function buildAgentAdapters(
         durationMs: result.durationMs,
         truncated: result.truncated
       };
-    }
+    },
+    runTerminal: async (input) => runTerminalInWorkspace(workspace, input, secrets),
+    verifyFilesExist: async (paths) => verifyFilesInWorkspace(workspace, paths),
+    startPreviewServer: async (input) => startPreviewForWorkspace(workspace, input),
+    stopPreviewServer: async () => stopPreviewForWorkspace(workspace)
   };
 }
 
@@ -331,7 +350,7 @@ async function runAgentCycle(
     });
     const client = new DeepSeekClient({ apiKey });
 
-    const adapters = buildAgentAdapters(workspace, signal, () => lastTouchedFiles);
+    const adapters = buildAgentAdapters(workspace, signal, () => lastTouchedFiles, apiKey);
 
     for await (const event of runAgentTask({
       client,
@@ -343,23 +362,44 @@ async function runAgentCycle(
       if (event.type === "phase") {
         panel.webview.postMessage({ type: "status", state: event.phase satisfies AgentState });
       }
+      if (event.type === "tool" && event.phase === "start") {
+        if (event.tool === "run_terminal") {
+          panel.webview.postMessage({ type: "status", state: "Ejecutando comando" satisfies AgentState });
+        }
+        if (event.tool === "start_preview_server") {
+          panel.webview.postMessage({ type: "status", state: "Levantando servidor" satisfies AgentState });
+        }
+      }
       if (event.type === "delta") {
         lastStreamed += event.text;
-        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed) });
+        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
       }
       if (event.type === "tool" && event.phase === "done" && event.summary) {
         lastStreamed += `\n• ${event.tool}: ${event.summary.slice(0, 120)}\n`;
-        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed) });
+        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
       }
       if (event.type === "warning") {
-        panel.webview.postMessage({ type: "info", text: event.text });
+        panel.webview.postMessage({ type: "info", text: redactSecrets(event.text, [apiKey]) });
+        if (event.text.includes("requiere confirmación")) {
+          panel.webview.postMessage({
+            type: "info",
+            text: "Comando requiere confirmación — no se ejecutó automáticamente."
+          });
+        }
       }
       if (event.type === "message") {
-        lastAgentText = redactSecrets(event.text);
-        lastRawDiff = event.text.includes("```diff") ? event.text : null;
+        lastAgentText = redactSecrets(event.text, [apiKey]);
+        if (event.text.startsWith("Servidor listo:")) {
+          const url = event.text.replace("Servidor listo:", "").trim();
+          panel.webview.postMessage({ type: "serverReady", reused: false, url, logs: "" });
+          panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
+        }
+        if (!event.text.startsWith("Servidor listo:")) {
+          lastRawDiff = event.text.includes("```diff") ? event.text : null;
+        }
       }
       if (event.type === "done") {
-        lastAgentText = redactSecrets(event.result.message);
+        lastAgentText = redactSecrets(event.result.message, [apiKey]);
         lastRawDiff = event.result.rawDiff;
         lastTouchedFiles = event.result.touchedFiles;
         panel.webview.postMessage({

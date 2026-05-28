@@ -18,11 +18,18 @@ Decision lens: single LemonWoo Agent surface, one DeepSeek BYOK key, no model/pr
 
 ## OpenCode spike results (this branch)
 
-Run:
+Run from terminal (optional shell key):
 
 ```bash
 pnpm opencode:spike
 ```
+
+Run from LemonWoo.app (uses SecretStorage — no shell export):
+
+- Command palette → **LemonWoo: Run Harness Diagnostic**
+- Output channel: `LemonWoo Harness`
+
+Do not claim live DeepSeek PASS from CLI alone when the product key exists only in SecretStorage.
 
 Structured checks:
 

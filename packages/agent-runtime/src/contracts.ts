@@ -6,7 +6,11 @@ export type AgentToolName =
   | "search"
   | "propose_diff"
   | "test_gate"
-  | "summarize";
+  | "summarize"
+  | "run_terminal"
+  | "verify_files_exist"
+  | "start_preview_server"
+  | "stop_preview_server";
 
 export interface AgentToolRequest {
   tool: AgentToolName;
@@ -23,6 +27,12 @@ export interface AgentToolResult {
   rawDiff?: string | null;
   touchedFiles?: string[];
   warning?: string;
+  requiresConfirmation?: boolean;
+  exitCode?: number;
+  url?: string;
+  present?: string[];
+  missing?: string[];
+  timedOut?: boolean;
 }
 
 export interface AgentStep {
@@ -72,10 +82,50 @@ export interface TestGateStructuredResult {
   truncated?: boolean;
 }
 
+export interface TerminalRunInput {
+  command: string;
+  cwd?: string;
+  timeoutMs?: string;
+  reason?: string;
+}
+
+export interface TerminalRunResult {
+  ok: boolean;
+  command: string;
+  cwd: string;
+  output: string;
+  stdout: string;
+  stderr: string;
+  exitCode?: number;
+  timedOut?: boolean;
+  requiresConfirmation?: boolean;
+  warning?: string;
+}
+
+export interface VerifyFilesResult {
+  ok: boolean;
+  present: string[];
+  missing: string[];
+}
+
+export interface PreviewToolResult {
+  ok: boolean;
+  url?: string;
+  port?: number;
+  command?: string;
+  output?: string;
+  reused?: boolean;
+  warning?: string;
+}
+
 export interface AgentRuntimeAdapters {
   readFile?: (relPath: string) => Promise<string | null>;
   searchWorkspace?: (query: string) => Promise<string[]>;
   runTestGate?: (changedFiles: string[]) => Promise<TestGateStructuredResult>;
+  runTerminal?: (input: TerminalRunInput) => Promise<TerminalRunResult>;
+  verifyFilesExist?: (paths: string[]) => Promise<VerifyFilesResult>;
+  startPreviewServer?: (input: { command?: string; port?: string; cwd?: string; reason?: string }) => Promise<PreviewToolResult>;
+  stopPreviewServer?: () => Promise<PreviewToolResult>;
 }
 
 export interface RunAgentLoopInput {

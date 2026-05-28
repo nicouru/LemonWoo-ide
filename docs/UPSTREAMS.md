@@ -71,8 +71,9 @@ Structured report fields: `SDK_IMPORT`, `CLI_AVAILABLE`, `DEEPSEEK_CONFIG`, `SES
 ### DeepSeek compatibility (LemonWoo rules)
 
 - Endpoint: `https://api.deepseek.com` via OpenAI-compatible provider config.
-- API key: **`DEEPSEEK_API_KEY` in shell only** for CLI spike — `{env:DEEPSEEK_API_KEY}` in `OPENCODE_CONFIG_CONTENT`.
-- LemonWoo.app SecretStorage key is **never read** by the spike.
+- **Product path**: key in LemonWoo.app `SecretStorage` (`deepseek.apiKey`) — used by chat, Tab, and `LemonWoo: Run Harness Diagnostic`.
+- **CLI spike path**: `DEEPSEEK_API_KEY` in shell only for `pnpm opencode:spike` / CI — optional; SKIP when absent.
+- LemonWoo.app SecretStorage key is **never read** by CLI scripts or written to docs/logs.
 - `disabled_providers: ["opencode"]` hides OpenCode Zen; LemonWoo keeps automatic Pro/Flash routing in the product path.
 - Live checks **SKIP** when the shell key is absent (expected when key lives only in LemonWoo.app).
 
