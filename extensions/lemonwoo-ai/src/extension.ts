@@ -64,8 +64,10 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     activeAbort = undefined;
     stopAllPreviewServers();
   });
-  panel.webview.html = renderHtml();
   panel.webview.onDidReceiveMessage(async (msg) => {
+    if (msg.type === "initialized") {
+      await ensureKey(context, panel);
+    }
     if (msg.type === "run") await handleRun(context, panel, String(msg.text ?? ""));
     if (msg.type === "fixAgent") await handleFixWithAgent(context, panel);
     if (msg.type === "stop") {
@@ -127,15 +129,18 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
       await handleTestGate(panel);
     }
   });
-  await ensureKey(context, panel);
+  panel.webview.html = renderHtml();
 }
 
 function isWelcomeTab(tab: vscode.Tab): boolean {
+  const input = tab.input;
+  if (input && typeof input === "object" && "uri" in input && (input as any).uri?.scheme === "file") {
+    return false;
+  }
   const label = tab.label.toLowerCase();
   if (label.includes("welcome")) {
     return true;
   }
-  const input = tab.input;
   if (input instanceof vscode.TabInputText) {
     const value = `${input.uri.scheme}:${input.uri.path}`.toLowerCase();
     return value.includes("walkthrough") || value.includes("getting-started") || value.includes("welcome");
@@ -442,6 +447,7 @@ function renderHtml(): string {
   </main>
   <script>
     const vscode = acquireVsCodeApi();
+    vscode.postMessage({type:'initialized'});
     let last = "";
     function run(){
       document.getElementById('retry').style.display='none';
