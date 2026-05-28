@@ -2,6 +2,12 @@ import * as vscode from "vscode";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
+import {
+  detectLocalActionIntent,
+  ensurePreviewServer,
+  stopAllPreviewServers,
+  stopPreviewServer
+} from "./localActions.js";
 
 const KEY_NAME = "deepseek.apiKey";
 const VIEW_TYPE = "lemonwoo.agentView";
@@ -44,6 +50,7 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     if (activePanel === panel) activePanel = undefined;
     activeAbort?.abort();
     activeAbort = undefined;
+    stopAllPreviewServers();
   });
   panel.webview.html = renderHtml();
   panel.webview.onDidReceiveMessage(async (msg) => {
@@ -53,6 +60,16 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     if (msg.type === "stop") {
       activeAbort?.abort();
       activeAbort = undefined;
+      panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+    }
+    if (msg.type === "stopServer") {
+      const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspace) return;
+      const stopped = stopPreviewServer(workspace);
+      panel.webview.postMessage({
+        type: stopped ? "serverStopped" : "error",
+        text: stopped ? "Servidor detenido." : "No hay servidor activo para este workspace."
+      });
       panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
     }
     if (msg.type === "saveKey") {
@@ -95,14 +112,39 @@ async function ensureKey(context: vscode.ExtensionContext, panel: vscode.Webview
 }
 
 async function handleRun(context: vscode.ExtensionContext, panel: vscode.WebviewPanel, prompt: string) {
+  if (!prompt.trim()) {
+    panel.webview.postMessage({ type: "error", text: "Escribí una tarea para el agente." });
+    return;
+  }
+
+  const localIntent = detectLocalActionIntent(prompt);
+  if (localIntent === "preview") {
+    const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspace) {
+      panel.webview.postMessage({ type: "error", text: "Abrí una carpeta para levantar preview local." });
+      return;
+    }
+    panel.webview.postMessage({ type: "status", state: "Verificando" satisfies AgentState });
+    try {
+      const preview = await ensurePreviewServer(workspace);
+      panel.webview.postMessage({
+        type: "serverReady",
+        reused: preview.reused,
+        url: preview.url,
+        logs: preview.logs.join("\n")
+      });
+    } catch (error) {
+      panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
+    } finally {
+      panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+    }
+    return;
+  }
+
   const apiKey = await context.secrets.get(KEY_NAME);
   if (!apiKey) {
     panel.webview.postMessage({ type: "needKey" });
     panel.webview.postMessage({ type: "error", text: "Pegá tu DeepSeek API key para conectar LemonWoo." });
-    return;
-  }
-  if (!prompt.trim()) {
-    panel.webview.postMessage({ type: "error", text: "Escribí una tarea para el agente." });
     return;
   }
 
@@ -123,6 +165,8 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     "You are LemonWoo Agent, a coding agent inside LemonWoo IDE.",
     "DeepSeek only. No provider picker, no model picker.",
     "Use the provided repo context. Never output secrets.",
+    "Never claim actions are done (created/modified/run/server started) unless LemonWoo actually executed and verified them locally.",
+    "If you return code changes, treat them as propuesta until Apply succeeds.",
     "When proposing code edits, include a concise explanation and a fenced ```diff block."
   ].join("\n");
   const user = [
@@ -146,7 +190,9 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
       panel.webview.postMessage({ type: "status", state: "Pensando" satisfies AgentState });
       out = await deepseekChat(apiKey, system, user, models.pro, activeAbort.signal);
     }
-    panel.webview.postMessage({ type: "result", text: redactSecrets(out), hasDiff: /```diff[\s\S]*?```/.test(out) });
+    const hasDiff = /```diff[\s\S]*?```/.test(out);
+    const resultText = hasDiff ? `Propuesta (todavía no aplicada):\n\n${out}` : out;
+    panel.webview.postMessage({ type: "result", text: redactSecrets(resultText), hasDiff });
     panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
   } catch (error) {
     const text = String(error);
@@ -435,7 +481,7 @@ function renderHtml(): string {
     textarea { min-height: 118px; resize: vertical; }
     button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; }
     button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
-    #stop, #retry, #apply, #tests { display: none; }
+    #stop, #retry, #apply, #tests, #stopServer { display: none; }
     pre { white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--vscode-panel-border); padding-top: 14px; }
   </style>
 </head>
@@ -459,6 +505,7 @@ function renderHtml(): string {
       <button id="retry" class="secondary" onclick="retry()">Retry</button>
       <button id="apply" onclick="applyDiff()">Aplicar diff</button>
       <button id="tests" class="secondary" onclick="runTestGate()">Verificar</button>
+      <button id="stopServer" class="secondary" onclick="stopServer()">Detener servidor</button>
     </div>
     <pre id="out"></pre>
   </main>
@@ -474,6 +521,7 @@ function renderHtml(): string {
     function saveKey(){ vscode.postMessage({type:'saveKey', key: document.getElementById('key').value});}
     function applyDiff(){ vscode.postMessage({type:'applyDiff', diff: last}); }
     function runTestGate(){ vscode.postMessage({type:'runTestGate'}); }
+    function stopServer(){ vscode.postMessage({type:'stopServer'}); }
     window.addEventListener('message', (event) => {
       const m = event.data;
       if (m.type === 'status') {
@@ -485,6 +533,15 @@ function renderHtml(): string {
         document.getElementById('out').textContent = m.text;
         document.getElementById('apply').style.display = m.hasDiff ? 'inline-block' : 'none';
         document.getElementById('tests').style.display = 'inline-block';
+      }
+      if (m.type === 'serverReady') {
+        const header = m.reused ? 'Servidor ya activo.' : 'Servidor iniciado.';
+        document.getElementById('out').textContent = header + '\\nURL: ' + m.url + '\\n\\n' + (m.logs || '');
+        document.getElementById('stopServer').style.display='inline-block';
+      }
+      if (m.type === 'serverStopped') {
+        document.getElementById('out').textContent = m.text;
+        document.getElementById('stopServer').style.display='none';
       }
       if (m.type === 'error') {
         document.getElementById('out').textContent = 'ERROR: ' + m.text;
@@ -506,4 +563,5 @@ function renderHtml(): string {
 
 export function deactivate() {
   activeAbort?.abort();
+  stopAllPreviewServers();
 }

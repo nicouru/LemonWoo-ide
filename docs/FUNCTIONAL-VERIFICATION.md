@@ -7,6 +7,7 @@ This file records command-level evidence for the required v1 vertical slice.
 - Partial pass with executable app bundle and core checks green.
 - Live DeepSeek smoke remains environment-gated by user API key and in-app manual run.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
+- 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 
 ## Build-first evidence
 
@@ -93,6 +94,15 @@ Covered contracts include:
 - Real Stop/AbortController wiring for active requests.
 - TestGate script decision and redaction behavior.
 - Runtime exclusion guard for Anthropic compatibility.
+- Local preview intent detection.
+- Script selection priority (`dev` -> `start` -> `serve` -> `preview`).
+- Package manager selection by lockfile.
+- Python static fallback with `index.html`.
+- Localhost URL parsing from process output.
+- Dangerous command rejection in preview startup scripts.
+- Log redaction in local preview output.
+- Spawn safety (`shell: false`) for preview process creation.
+- Clear error when workspace is not servable.
 
 ## Correction pass evidence
 
@@ -136,3 +146,37 @@ Documented as external environment blocker in `docs/UPSTREAMS.md`.
 7. If tests fail, run correction cycle.
 
 These steps are implemented but require interactive IDE confirmation.
+
+## Manual preview/dev-server verification
+
+Fixture added:
+
+- `fixtures/static-site/index.html`
+
+Steps:
+
+1. Open `LemonWoo.app`.
+2. Open folder `fixtures/static-site` (or a workspace with `package.json` + `dev/start/serve/preview` script).
+3. In LemonWoo Agent, ask: `quiero ver la página en una URL, levantá un servidor local`.
+4. Confirm panel shows concrete local action with:
+   - server started/reused message,
+   - local URL,
+   - recent logs,
+   - `Detener servidor` button visible.
+5. Open the shown URL and verify page responds.
+6. Click `Detener servidor`.
+7. Confirm the local URL/port no longer responds.
+
+Command evidence for this stage:
+
+```bash
+pnpm -r test
+pnpm build:mac
+pnpm check:branding
+pnpm check:secrets
+pnpm smoke:bundle
+```
+
+Result:
+
+- All commands passed after local action router implementation.

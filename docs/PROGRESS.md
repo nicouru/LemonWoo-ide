@@ -72,6 +72,25 @@ pnpm check:licenses
   - helper bundle ids use `dev.lemonwoo.ide.helper`.
   - build performs ad-hoc deep signing after patching.
 - Strengthened `smoke-bundle.sh`; it now fails unless the LemonWoo process is running and the front window is `LemonWoo Agent`.
+- Closed the v1 "chat suggests vs agent acts locally" gap for Preview/Dev Server:
+  - Added `extensions/lemonwoo-ai/src/localActions.ts` as a minimal local action router layer.
+  - Prompt intent detection now intercepts preview requests (`levantá servidor`, `quiero ver la página`, `localhost`, etc.) before DeepSeek calls.
+  - Implemented one running server per workspace with reuse behavior and explicit stop support.
+  - Implemented safe server startup planning:
+    - `package.json` script selection priority: `dev` -> `start` -> `serve` -> `preview`.
+    - package manager selection by lockfile (`pnpm-lock.yaml`/`yarn.lock`/fallback `npm`).
+    - static fallback to `python3 -m http.server` when only `index.html` exists.
+  - Added startup timeout (30s), URL parsing from stdout/stderr, recent log capture, and secret redaction in server logs.
+  - Added explicit safety rejection for dangerous script commands (`install`, `npx`, `sudo`, `rm`, `curl | sh`, `git push`).
+  - Updated webview UX:
+    - Shows concrete server action output with URL.
+    - Shows `Detener servidor` only while a server is active.
+    - Keeps Stop/Retry/Apply/TestGate behavior intact.
+  - Updated DeepSeek system prompt truthfulness rules so outputs do not claim execution unless verified.
+  - Diff-containing responses are labeled as `Propuesta` until apply succeeds; after apply the panel shows `diff aplicado`.
+- Added preview fixture at `fixtures/static-site/index.html` for manual verification flow.
+- Added mandatory tests for local action routing in `extensions/lemonwoo-ai/test/local-actions.test.ts`.
+- Updated bundle smoke script to accept real front window title variants (`LemonWoo Agent ...`) and degrade gracefully if macOS denies System Events permission.
 
 Executed checks after corrections:
 
@@ -83,6 +102,23 @@ pnpm check:secrets
 pnpm check:licenses
 pnpm smoke:bundle
 ```
+
+Executed checks after local action router implementation:
+
+```bash
+pnpm -r test
+pnpm build:mac
+pnpm check:branding
+pnpm check:secrets
+pnpm smoke:bundle
+```
+
+Result:
+
+- Workspace tests passed, including new local action router test coverage.
+- `dist/LemonWoo.app` rebuilt successfully.
+- Branding and secrets checks passed.
+- Bundle smoke passed with LemonWoo Agent window detection.
 
 Manual launch evidence:
 

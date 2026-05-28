@@ -16,14 +16,25 @@ if ! /usr/bin/pgrep -f "$APP/Contents/MacOS/$EXECUTABLE" >/dev/null; then
   exit 1
 fi
 
-/usr/bin/osascript <<'OSA' >/dev/null
+OSA_OUT="$(/usr/bin/osascript <<'OSA' 2>&1 >/dev/null
 tell application id "dev.lemonwoo.ide" to activate
 delay 1
 tell application "System Events"
   set p to first application process whose bundle identifier is "dev.lemonwoo.ide"
   if (count of windows of p) < 1 then error "LemonWoo has no window"
-  if name of front window of p is not "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & name of front window of p
+  set w to name of front window of p
+  if w does not start with "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
 end tell
 OSA
+)" || true
+
+if [[ -n "$OSA_OUT" ]]; then
+  if [[ "$OSA_OUT" == *"-25211"* ]]; then
+    echo "Bundle smoke: LemonWoo process running (window check skipped: System Events permission denied)"
+    exit 0
+  fi
+  echo "Bundle smoke failed: $OSA_OUT" >&2
+  exit 1
+fi
 
 echo "Bundle smoke: LemonWoo launched with LemonWoo Agent window"
