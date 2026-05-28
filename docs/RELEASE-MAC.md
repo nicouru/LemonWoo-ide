@@ -4,28 +4,51 @@ This document describes the workflow for verifying, packaging, and distributing 
 
 ## Quick Start: Release Verification
 
-To run all tests, build the production macOS application, run validation checks (branding, secrets, licenses, signatures), run a bundle smoke test, and package it into a distributable DMG, run:
+To run the standard local release pipeline (tests, build, checks, smoke, package), run:
 
 ```bash
 pnpm release:check
 ```
 
-This single command coordinates:
-1. Workspace unit tests (`pnpm -r test`)
-2. macOS bundle creation (`pnpm build:mac`)
-3. Branding conformance verification (`pnpm check:branding`)
-4. Code signature verification (`codesign --verify`)
-5. Pre-release secret scanning (`pnpm check:secrets`)
-6. Compliance/license checking (`pnpm check:licenses`)
-7. Real UI bundle smoke test (`pnpm smoke:bundle`)
-8. DMG packaging and validation (`pnpm package:dmg`)
+To run the RC hardening gate (including scope/public checks and live smoke policy), run:
+
+```bash
+pnpm rc:check
+```
+
+To generate a reproducible RC report with git/artifact/check metadata, run:
+
+```bash
+pnpm rc:report
+```
+
+`pnpm rc:report` writes `docs/RC-REPORT.md`.
+
+## Command behavior details
+
+- `pnpm release:check`: product release flow with DMG packaging.
+- `pnpm rc:check`: ordered RC checks:
+  1. `pnpm -r test`
+  2. `pnpm -r build`
+  3. `pnpm check:branding`
+  4. `pnpm check:secrets`
+  5. `pnpm check:licenses`
+  6. `pnpm smoke:bundle`
+  7. `bash scripts/verify-v1-scope.sh`
+  8. `bash scripts/verify-public-readiness.sh`
+  9. `bash scripts/verify-release-artifacts.sh`
+  10. `pnpm smoke:agent:live`
+- If `smoke:agent:live` exits `78` because `DEEPSEEK_API_KEY` is missing, RC check records **SKIP externo esperado** and continues as successful.
+- Any other non-zero exit in `smoke:agent:live` fails `pnpm rc:check`.
 
 ## Artifact Location
 
-Once packaging completes, the final distributable DMG will be placed in:
+Once packaging completes, expected artifacts are:
 
 ```
-dist/LemonWoo-<version>-mac-arm64.dmg
+dist/LemonWoo.app
+dist/LemonWoo-<version>-mac-<arch>.dmg
+dist/LemonWoo-<version>-mac-<arch>.dmg.sha256
 ```
 
 ## Security & Code Signing
@@ -33,6 +56,7 @@ dist/LemonWoo-<version>-mac-arm64.dmg
 - **Ad-hoc Signing**: In v1, the application is signed locally using ad-hoc signing (`codesign --sign -`).
 - **No Apple Developer ID / Notarization**: The DMG is not signed with an Apple Developer ID certificate and is not notarized by Apple. This is planned for future versions.
 - **BYOK (Bring Your Own Key)**: LemonWoo does not include any API keys or secrets. Users must provide their own DeepSeek API key upon first launch.
+- **Secret hygiene**: RC tooling never prints `DEEPSEEK_API_KEY` values; it only reports key presence/absence via live-smoke outcome.
 
 ### Bypassing macOS Gatekeeper
 

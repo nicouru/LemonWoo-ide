@@ -274,3 +274,31 @@ Manual LemonWoo.app vertical slice:
 7. Ejecutar Verificar.
 8. Si falla, usar Corregir con agente.
 9. Confirmar test verde.
+
+## RC distribution hardening (2026-05-28)
+
+Commands executed for this block:
+
+```bash
+bash -n scripts/package-dmg.sh scripts/release-check.sh scripts/verify-release-artifacts.sh
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm check:licenses
+pnpm smoke:bundle
+bash scripts/verify-v1-scope.sh
+bash scripts/verify-public-readiness.sh
+bash scripts/verify-release-artifacts.sh
+pnpm rc:check
+pnpm rc:report
+pnpm release:check
+```
+
+Evidence goals covered:
+
+- Reproducible RC gate via `pnpm rc:check` with ordered checks.
+- External-gated live smoke handling (`exit 78`) as expected skip when key is absent.
+- DMG artifact naming hardened to `LemonWoo-<version>-mac-<arch>.dmg` with `.sha256`.
+- Artifact verifier now checks app metadata, executable, prohibited references with allowlist, DMG integrity, and checksum consistency.
+- RC report generated at `docs/RC-REPORT.md` with git/artifact/check status.

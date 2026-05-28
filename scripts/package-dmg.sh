@@ -7,14 +7,27 @@ cd "$ROOT"
 
 # 2. Read version from package.json
 VERSION=$(node -p "require('./package.json').version")
-echo "Starting DMG packaging for LemonWoo v${VERSION}..."
+ARCH_RAW="$(uname -m)"
+case "$ARCH_RAW" in
+  arm64|aarch64) ARCH="arm64" ;;
+  x86_64) ARCH="x64" ;;
+  *) ARCH="$ARCH_RAW" ;;
+esac
+echo "Starting DMG packaging for LemonWoo v${VERSION} (${ARCH})..."
 
 APP_PATH="dist/LemonWoo.app"
 
 # 3. Ensure dist/LemonWoo.app exists; if not, build it
 if [[ ! -d "$APP_PATH" ]]; then
-  echo "Application bundle not found at ${APP_PATH}. Running 'pnpm build:mac'..."
+  echo "ERROR: Application bundle not found at ${APP_PATH}."
+  echo "Run 'pnpm build:mac' first (or use 'pnpm release:check') and retry."
+  echo "Attempting automatic build now..."
   pnpm build:mac
+fi
+
+if [[ ! -d "$APP_PATH" ]]; then
+  echo "ERROR: build completed but ${APP_PATH} still does not exist."
+  exit 1
 fi
 
 # 4. Run required validation checks
@@ -31,8 +44,9 @@ echo "Verifying code signature of ${APP_PATH}..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
 # 5. Create the DMG with hdiutil
-DMG_NAME="LemonWoo-${VERSION}-mac-arm64.dmg"
+DMG_NAME="LemonWoo-${VERSION}-mac-${ARCH}.dmg"
 DMG_PATH="dist/${DMG_NAME}"
+SHA_PATH="${DMG_PATH}.sha256"
 STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/lemonwoo-dmg.XXXXXX")"
 trap 'rm -rf "$STAGE_DIR"' EXIT
 
@@ -51,6 +65,11 @@ hdiutil create -volname "LemonWoo" -srcfolder "$STAGE_DIR" -ov -format UDZO "$DM
 echo "Verifying DMG integrity..."
 hdiutil verify "$DMG_PATH"
 
-# 7. Print the final DMG path
+# 7. Generate checksum
+echo "Generating SHA256 checksum..."
+shasum -a 256 "$DMG_PATH" > "$SHA_PATH"
+
+# 8. Print the final paths
 echo "DMG packaging successful!"
 echo "Final DMG Path: $(pwd)/${DMG_PATH}"
+echo "SHA256 File: $(pwd)/${SHA_PATH}"

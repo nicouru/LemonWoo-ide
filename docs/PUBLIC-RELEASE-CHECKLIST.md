@@ -17,20 +17,14 @@ Este documento sirve como la lista de verificación final antes de hacer públic
 Antes de empujar cualquier cambio definitivo a la rama pública de `main`, ejecuta de forma local:
 
 ```bash
-# 1. Ejecutar las suites de prueba de todos los paquetes
-pnpm -r test
+# 1) Gate RC reproducible (incluye checks, smoke, scope/public guards y live smoke policy)
+pnpm rc:check
 
-# 2. Verificar que no se introdujo scope fuera de v1 (Stripe, MCP, etc.)
-bash scripts/verify-v1-scope.sh
+# 2) Reporte trazable del candidato RC
+pnpm rc:report
 
-# 3. Comprobar la preparación general de lanzamiento público (documentos, límites de tamaño, etc.)
-bash scripts/verify-public-readiness.sh
-
-# 4. Validar que no hay llaves privadas en el historial ni en el workspace
-bash scripts/check-secrets.sh
-
-# 5. Comprobar la validez del branding local
-bash scripts/check-branding.sh
+# 3) Pipeline de release local con empaquetado DMG
+pnpm release:check
 ```
 
 ---
@@ -44,6 +38,7 @@ bash scripts/check-branding.sh
 ## 4. Release Local macOS
 - [ ] Generar el bundle: `pnpm build:mac`
 - [ ] Empaquetar el DMG: `pnpm package:dmg`
+- [ ] Confirmar checksum generado: `dist/LemonWoo-<version>-mac-<arch>.dmg.sha256`
 - [ ] Auditar los artefactos construidos: `bash scripts/verify-release-artifacts.sh`
 - [ ] Probar la apertura inicial del DMG simulando un sistema limpio (usando la guía de [QA-MANUAL-ES.md](file:///Users/lskjdnf02387f4bf/Developer/Lemonwoo2/docs/QA-MANUAL-ES.md)).
 
