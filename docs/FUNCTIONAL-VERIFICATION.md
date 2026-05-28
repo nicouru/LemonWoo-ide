@@ -301,7 +301,7 @@ Evidence goals covered:
 - External-gated live smoke handling (`exit 78`) as expected skip when key is absent.
 - DMG artifact naming hardened to `LemonWoo-<version>-mac-<arch>.dmg` with `.sha256`.
 - Artifact verifier now checks app metadata, executable, prohibited references with allowlist, DMG integrity, and checksum consistency.
-- RC report generated at `docs/RC-REPORT.md` with git/artifact/check status.
+- RC report generated at `dist/RC-REPORT.md` with git/artifact/check status.
 
 ## Native Tab Completion (2026-05-28)
 

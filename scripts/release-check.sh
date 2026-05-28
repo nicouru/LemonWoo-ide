@@ -35,9 +35,15 @@ pnpm package:dmg
 
 # Read version and build bundle ID details for summary
 VERSION=$(node -p "require('./package.json').version")
+ARCH_RAW="$(uname -m)"
+case "$ARCH_RAW" in
+  arm64|aarch64) ARCH="arm64" ;;
+  x86_64) ARCH="x64" ;;
+  *) ARCH="$ARCH_RAW" ;;
+esac
 BUNDLE_ID="dev.lemonwoo.ide"
 EXECUTABLE="dist/LemonWoo.app/Contents/MacOS/LemonWoo"
-DMG_PATH="dist/LemonWoo-${VERSION}-mac-arm64.dmg"
+DMG_PATH="dist/LemonWoo-${VERSION}-mac-${ARCH}.dmg"
 
 echo "=========================================="
 echo "Release Check Completed Successfully!"

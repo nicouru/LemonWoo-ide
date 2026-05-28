@@ -39,6 +39,36 @@ Current stage summary:
 
 Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
 
+## 2026-05-28 — RC distribution hardening
+
+- Added reproducible RC validation entrypoint:
+  - `scripts/rc-check.sh`
+  - `pnpm rc:check`
+  - Handles `pnpm smoke:agent:live` exit `78` as expected external skip (`DEEPSEEK_API_KEY` absent), not as RC failure.
+- Added reproducible RC reporting:
+  - `scripts/write-rc-report.mjs`
+  - `pnpm rc:report`
+  - Generates `docs/RC-REPORT.md` with git metadata, version, artifact paths, DMG SHA256, and last RC-check summary.
+- Hardened packaging:
+  - `scripts/package-dmg.sh` now generates `dist/LemonWoo-<version>-mac-<arch>.dmg`.
+  - Writes adjacent checksum `*.dmg.sha256`.
+  - Verifies DMG via `hdiutil verify`.
+  - Emits clear guidance when `dist/LemonWoo.app` is missing.
+- Hardened artifact verification:
+  - `scripts/verify-release-artifacts.sh` keeps explicit skip behavior when `dist/` is absent.
+  - Validates app bundle id, executable, plist branding, visible prohibited references with allowlist, DMG verification, and checksum match.
+- Documentation refreshed for RC/install flow:
+  - `docs/RELEASE-MAC.md`
+  - `docs/INSTALL-ES.md`
+  - `docs/FUNCTIONAL-VERIFICATION.md`
+  - `docs/PUBLIC-RELEASE-CHECKLIST.md`
+  - `README.md`
+
+Pending before public GA:
+
+- Run one full `pnpm rc:check` with a real `DEEPSEEK_API_KEY` to convert live smoke from expected skip to pass evidence.
+- Optional future hardening outside this block: Apple Developer ID signing + notarization.
+
 ## 2026-05-27
 
 - Created LemonWoo v1 monorepo with required directory layout:
