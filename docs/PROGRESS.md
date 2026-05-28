@@ -2,11 +2,15 @@
 
 ## Current stage — 2026-05-28
 
-LemonWoo is now in **v1 release-candidate validation**.
+LemonWoo is in **v1 RC ready — live DeepSeek proof pending**.
+
+Final validation on `main` @ `7257be0` (PR #14 merged): `pnpm -r test`, `pnpm rc:check`, `pnpm release:check`, `smoke:bundle`, and release artifacts are **PASS**. `pnpm smoke:agent:live` is **SKIP exit 78** in environments without `DEEPSEEK_API_KEY`. v1 is **not** declared fully closed until one real-key live smoke PASS and manual dogfood in `LemonWoo.app` are recorded.
+
+Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0-rc.md). Tag `v0.1.0-rc.1` is **pending** (see release notes).
 
 Repository state:
 
-- `main` @ `bc2c680` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), native Flash Tab completion, and first-run agent surface polish.
+- `main` @ `7257be0` includes PR #12 (RC gauntlet), PR #13 (functional dogfood hardening + tab-focus fix), PR #14 (live beta closeout + router escalation), native Flash Tab completion, and first-run agent surface polish.
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:

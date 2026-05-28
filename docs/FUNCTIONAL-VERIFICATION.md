@@ -9,6 +9,18 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 
+## v1 final RC validation run (2026-05-28, main @ 7257be0)
+
+| Check | Result |
+| --- | --- |
+| `pnpm -r build` / `pnpm -r test` | PASS |
+| `pnpm rc:check` / `pnpm release:check` | PASS |
+| `pnpm smoke:bundle` | PASS (`LemonWoo Agent` window) |
+| `verify-release-artifacts` / `hdiutil verify` | PASS on `dist/LemonWoo-0.1.0-mac-arm64.dmg` |
+| `pnpm smoke:agent:live` | **SKIP exit 78** — `DEEPSEEK_API_KEY` not set in validation environment |
+| Manual dogfood in `LemonWoo.app` | **Pending** — requires operator + real key (see `docs/QA-MANUAL-ES.md` §3b) |
+| Git tag `v0.1.0-rc.1` | **Not created** — blocked on live PASS + manual dogfood |
+
 ## v1 live beta closeout (2026-05-28)
 
 `pnpm smoke:agent:live` (after `pnpm -r build`):
