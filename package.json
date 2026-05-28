@@ -12,6 +12,7 @@
     "check:branding": "bash scripts/check-branding.sh",
     "check:secrets": "bash scripts/check-secrets.sh",
     "check:licenses": "bash scripts/check-licenses.sh",
+    "verify:docs": "node scripts/verify-docs-current.mjs",
     "smoke:bundle": "bash scripts/smoke-bundle.sh",
     "smoke:agent:live": "node scripts/live-agent-smoke.mjs",
     "build:mac": "bash apps/desktop/build-mac.sh",

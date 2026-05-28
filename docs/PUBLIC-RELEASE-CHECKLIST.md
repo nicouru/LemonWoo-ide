@@ -9,6 +9,7 @@ Este documento sirve como la lista de verificación final antes de hacer públic
 - [ ] Los bloques v1 ya mergeados deben estar presentes en `main`: agente, preview local, TestGate/fix loop, RC release hardening y native Flash Tab completion.
 - [ ] No debe haber PRs abiertos que modifiquen `extensions/lemonwoo-ai/**`, `packages/deepseek/**`, `packages/agent-runtime/**` o `scripts/**` sin volver a ejecutar la matriz RC.
 - [ ] Volver a ejecutar todos los scripts de guardrails y verificación de release en la rama combinada antes de publicar el release definitivo.
+- [ ] Correr el guardrail automático de consistencia documental (`pnpm verify:docs`) para validar que no haya referencias obsoletas, rutas locales o residuos de desarrollo.
 
 ---
 
@@ -16,13 +17,16 @@ Este documento sirve como la lista de verificación final antes de hacer públic
 Antes de empujar cualquier cambio definitivo a la rama pública de `main`, ejecuta de forma local:
 
 ```bash
-# 1) Gate RC reproducible (incluye checks, smoke, scope/public guards y live smoke policy)
+# 1) Validar consistencia de documentos y scripts (evitar drift de rutas locales/obsoletas)
+pnpm verify:docs
+
+# 2) Gate RC reproducible (incluye checks, smoke, scope/public guards, doc consistency y live smoke policy)
 pnpm rc:check
 
-# 2) Reporte trazable del candidato RC
+# 3) Reporte trazable del candidato RC
 pnpm rc:report
 
-# 3) Pipeline de release local con empaquetado DMG
+# 4) Pipeline de release local con empaquetado DMG
 pnpm release:check
 ```
 

@@ -32,7 +32,8 @@ Still externally gated before calling v1 fully proven:
 ## Release commands (v1 RC)
 
 - `pnpm release:check`: tests + build + checks + bundle smoke + DMG packaging.
-- `pnpm rc:check`: reproducible RC validation gate (includes scope/public guardrails and live smoke policy).
+- `pnpm verify:docs`: documentation consistency guardrail check (verifies no obsolete references, local user paths, or outdated features exist).
+- `pnpm rc:check`: reproducible RC validation gate (includes scope/public guardrails, doc consistency, and live smoke policy).
 - `pnpm rc:report`: writes local report `dist/RC-REPORT.md` with git/artifact/check metadata.
 
 Artifacts are expected under `dist/`:
