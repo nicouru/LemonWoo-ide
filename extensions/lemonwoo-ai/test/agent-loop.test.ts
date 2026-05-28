@@ -26,6 +26,22 @@ describe("agent programming loop wiring", () => {
     expect(src).toContain("lastTestFailed");
   });
 
+  it("preserves lastUserTask for fix loop", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("lastUserTask");
+    expect(src).toMatch(/lastUserTask\s*=\s*prompt/);
+    expect(src).toContain("originalTask = lastUserTask");
+  });
+
+  it("tracks text editor separately from webview focus", () => {
+    const tracking = readFileSync(resolve(process.cwd(), "src/editorTracking.ts"), "utf8");
+    const ext = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(tracking).toContain("onDidChangeActiveTextEditor");
+    expect(tracking).toContain('scheme === "file"');
+    expect(ext).toContain("getPreferredTextEditor");
+    expect(ext).toContain("registerTextEditorTracking");
+  });
+
   it("invokes rg only on demand", () => {
     expect(shouldInvokeRg("busca usos de sum")).toBe(true);
     expect(shouldInvokeRg("explica este archivo")).toBe(false);

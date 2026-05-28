@@ -1,17 +1,26 @@
 import * as vscode from "vscode";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
-import {
-  buildVolatileContext,
-  compactRepoTree,
-  isExcludedPath,
-  shouldInvokeRg
-} from "@lemonwoo/agent-runtime";
+import { buildVolatileContext, compactRepoTree, shouldInvokeRg } from "@lemonwoo/agent-runtime";
 import type { AgentContextSnapshot } from "@lemonwoo/agent-runtime";
+import { isTextEditor } from "./editorTracking.js";
+import { listWorkspaceFiles } from "./repoFiles.js";
 
 const MAX_READ = 6000;
-const MAX_TREE_DEPTH = 4;
+
+export interface EditorSnapshot {
+  relPath: string;
+  selection: string;
+  fileContent: string;
+  diagnostics: string;
+}
+
+export interface GatherAgentContextOptions {
+  signal?: AbortSignal;
+  editor?: vscode.TextEditor;
+  editorSnapshot?: EditorSnapshot;
+}
 
 function readOptionalFile(path: string, max = MAX_READ): string {
   if (!existsSync(path)) return "";
@@ -49,33 +58,23 @@ export async function readGitDiff(workspace: string, signal?: AbortSignal): Prom
   });
 }
 
-function listWorkspaceFiles(workspace: string, depth = 0): string[] {
-  if (depth > MAX_TREE_DEPTH) return [];
-  const out: string[] = [];
-  let entries: string[] = [];
-  try {
-    entries = readdirSync(workspace);
-  } catch {
-    return out;
-  }
-  for (const name of entries) {
-    const abs = join(workspace, name);
-    const rel = relative(workspace, abs).replace(/\\/g, "/");
-    if (!rel || isExcludedPath(rel)) continue;
-    let st;
-    try {
-      st = statSync(abs);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) {
-      out.push(`${rel}/`);
-      out.push(...listWorkspaceFiles(abs, depth + 1));
-    } else if (st.size < 200_000) {
-      out.push(rel);
-    }
-  }
-  return out;
+export function editorToSnapshot(
+  editor: vscode.TextEditor | undefined,
+  workspace: string
+): EditorSnapshot | undefined {
+  if (!isTextEditor(editor)) return undefined;
+  const filePath = editor.document.uri.fsPath;
+  const relPath = relative(workspace, filePath).replace(/\\/g, "/");
+  if (!relPath || relPath.startsWith("..")) return undefined;
+  return {
+    relPath,
+    selection: editor.document.getText(editor.selection),
+    fileContent: editor.document.getText().slice(0, 4000),
+    diagnostics: vscode.languages
+      .getDiagnostics(editor.document.uri)
+      .map((d) => `${d.severity}:${d.message}`)
+      .join("\n")
+  };
 }
 
 function deriveRgQuery(prompt: string): string | null {
@@ -116,23 +115,18 @@ export async function runRg(workspace: string, query: string, signal?: AbortSign
 export async function gatherAgentContext(
   workspace: string,
   userTask: string,
-  signal?: AbortSignal
+  options: GatherAgentContextOptions = {}
 ): Promise<AgentContextSnapshot> {
-  const editor = vscode.window.activeTextEditor;
+  const { signal, editor, editorSnapshot } = options;
   const agentsMd = readOptionalFile(join(workspace, "AGENTS.md"));
   const repoRules = readRules(workspace);
   const gitDiff = await readGitDiff(workspace, signal);
 
-  const filePath = editor?.document.uri.fsPath ?? "";
-  const relActive = filePath ? relative(workspace, filePath).replace(/\\/g, "/") : "";
-  const selection = editor?.document.getText(editor.selection) ?? "";
-  const openFile = editor?.document.getText().slice(0, 4000) ?? "";
-  const diagnostics = editor
-    ? vscode.languages
-        .getDiagnostics(editor.document.uri)
-        .map((d) => `${d.severity}:${d.message}`)
-        .join("\n")
-    : "";
+  const editorCtx = editorSnapshot ?? editorToSnapshot(editor, workspace);
+  const relActive = editorCtx?.relPath ?? "";
+  const selection = editorCtx?.selection ?? "";
+  const openFile = editorCtx?.fileContent ?? "";
+  const diagnostics = editorCtx?.diagnostics ?? "";
 
   let rgOut = "";
   if (shouldInvokeRg(userTask)) {

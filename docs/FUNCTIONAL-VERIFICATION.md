@@ -195,7 +195,10 @@ pnpm -r test
 
 Includes:
 
-- `runAgentTask` cycle with mocked DeepSeek client.
+- `runAgentTask` single-shot cycle with mocked DeepSeek client (not dynamic tool-calling).
+- Editor snapshot / explicit editor for `gatherAgentContext`.
+- Nested repo tree paths (`src/...`).
+- `lastUserTask` for TestGate fix loop.
 - Multi-file diff parse/apply safety (path traversal, `.git/`, new file, hunk mismatch without partial apply).
 - Context exclusions and on-demand `rg` heuristics.
 - Extension wiring for `Corregir con agente`, `runTestGate`, `planMultiFileApply`.

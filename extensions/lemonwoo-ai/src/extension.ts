@@ -10,6 +10,7 @@ import {
 } from "./localActions.js";
 import { gatherAgentContext } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
+import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
 
 const KEY_NAME = "deepseek.apiKey";
 const VIEW_TYPE = "lemonwoo.agentView";
@@ -23,8 +24,10 @@ let lastRawDiff: string | null = null;
 let lastTouchedFiles: string[] = [];
 let lastTestOutput = "";
 let lastTestFailed = false;
+let lastUserTask = "";
 
 export function activate(context: vscode.ExtensionContext) {
+  registerTextEditorTracking(context);
   const openAgent = vscode.commands.registerCommand("lemonwoo.openAgent", async () => {
     await openAgentPanel(context);
   });
@@ -160,7 +163,8 @@ async function handleFixWithAgent(context: vscode.ExtensionContext, panel: vscod
   const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (!workspace) return;
 
-  await runAgentCycle(context, panel, apiKey, workspace, "Corregir fallos de tests", lastTestOutput);
+  const originalTask = lastUserTask.trim() || "Corregir fallos de tests";
+  await runAgentCycle(context, panel, apiKey, workspace, originalTask, lastTestOutput);
 }
 
 async function runAgentCycle(
@@ -178,8 +182,15 @@ async function runAgentCycle(
   lastTestFailed = false;
   panel.webview.postMessage({ type: "fixAgent", show: false });
 
+  if (!fixTestOutput) {
+    lastUserTask = prompt;
+  }
+
   try {
-    const snapshot = await gatherAgentContext(workspace, prompt, signal);
+    const snapshot = await gatherAgentContext(workspace, prompt, {
+      signal,
+      editor: getPreferredTextEditor()
+    });
     const client = new DeepSeekClient({ apiKey });
 
     for await (const event of runAgentTask({

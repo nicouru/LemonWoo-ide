@@ -33,6 +33,8 @@ Interpretation:
 
 Status: implemented.
 
-- `runAgentTask` orchestrates DeepSeek Pro/Flash via `@lemonwoo/deepseek`.
-- Local tools are deterministic (context gather, multi-file diff plan/apply, TestGate, preview router).
+- `runAgentTask` is **single-shot**: one DeepSeek call per user action (or TestGate fix retry) with preassembled local context.
+- It does **not** perform dynamic tool-calling, MCP routing, or an internal agent framework loop.
+- Local steps are deterministic in the extension: context gather, multi-file diff plan/apply, TestGate, preview router.
+- DeepSeek Pro/Flash routing via `@lemonwoo/deepseek`.
 - No MCP, no multi-agent orchestration, no persistent memory.

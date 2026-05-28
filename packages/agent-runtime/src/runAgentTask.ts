@@ -1,3 +1,8 @@
+/**
+ * v1 agent runtime: single-shot DeepSeek call with preassembled local context.
+ * Not dynamic tool-calling, MCP, or a multi-step agent framework.
+ * OpenCode remains a separate spike (`opencodeSpike.ts`), blocked without CLI on PATH.
+ */
 import { DeepSeekClient } from "@lemonwoo/deepseek";
 import type { LemonWooTaskKind } from "@lemonwoo/deepseek";
 import { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";

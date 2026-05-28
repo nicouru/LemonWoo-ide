@@ -162,4 +162,10 @@ Result (2026-05-28):
 - 98 tests passed across workspace (`deepseek` 61, `lemonwoo-ai` 26, `agent-runtime` 11).
 - `dist/LemonWoo.app` rebuilt and smoke-launched with `LemonWoo Agent` window.
 - `dist/LemonWoo-0.1.0-mac-arm64.dmg` packaged successfully.
-```
+
+## 2026-05-28 — PR #4 audit fixes
+
+- Editor context: `editorTracking.ts` + explicit editor passed to `gatherAgentContext` (webview focus safe).
+- Repo tree: `repoFiles.ts` keeps fixed workspace root for paths like `src/sum.ts`.
+- Fix loop: `lastUserTask` preserved for **Corregir con agente**.
+- Documented `runAgentTask` as v1 single-shot fallback (not dynamic tool-calling).
