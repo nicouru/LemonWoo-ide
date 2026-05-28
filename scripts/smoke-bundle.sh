@@ -8,6 +8,14 @@ APP="$ROOT/dist/LemonWoo.app"
 [[ -f "$APP/Contents/Info.plist" ]] || { echo "Missing Info.plist" >&2; exit 1; }
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
 
+/usr/bin/osascript -e 'tell application id "dev.lemonwoo.ide" to quit' >/dev/null 2>&1 || true
+for _ in {1..20}; do
+  if ! /usr/bin/pgrep -f "$APP/Contents/MacOS/$EXECUTABLE" >/dev/null; then
+    break
+  fi
+  /bin/sleep 0.25
+done
+
 /usr/bin/open "$APP"
 /bin/sleep 5
 
@@ -23,7 +31,7 @@ tell application "System Events"
   set p to first application process whose bundle identifier is "dev.lemonwoo.ide"
   if (count of windows of p) < 1 then error "LemonWoo has no window"
   set w to name of front window of p
-  if w does not start with "LemonWoo Agent" and w does not start with "Welcome" then error "Expected LemonWoo Agent/Welcome window, got " & w
+  if w does not start with "LemonWoo Agent" then error "Expected LemonWoo Agent window, got " & w
 end tell
 OSA
 )" || true
@@ -37,4 +45,4 @@ if [[ -n "$OSA_OUT" ]]; then
   exit 1
 fi
 
-echo "Bundle smoke: LemonWoo launched with LemonWoo Agent/Welcome window"
+echo "Bundle smoke: LemonWoo launched with LemonWoo Agent window"

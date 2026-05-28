@@ -17,10 +17,10 @@ await esbuild.build({
   platform: "node",
   target: "node20",
   format: "cjs",
-  outfile: resolve(extRoot, "dist/extension.js"),
+  outfile: resolve(extRoot, "dist/extension.cjs"),
   external: ["vscode"],
   sourcemap: true,
   logLevel: "info"
 });
 
-console.log("Bundled extension -> dist/extension.js");
+console.log("Bundled extension -> dist/extension.cjs");
