@@ -1,12 +1,13 @@
 # PROGRESS
 
-## Current stage — v2.0 in progress
+## Current stage — v2.0 functional dogfood gauntlet
 
-LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Development focus is **v2.0 Agent Runtime Real** on branch `feature/v2-agent-runtime-real`:
+LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. `main` @ `f8d85f9` includes PR #17, the first v2.0 Agent Runtime Real implementation:
 
 - Bounded multi-step loop (`runAgentLoop`) with internal tools (read_file, search, propose_diff, test_gate, summarize).
 - Max 6 steps, repair via `fixTestOutput`, no MCP, no disk writes from runtime.
 - Extension passes adapters; UI remains single LemonWoo Agent panel.
+- Current branch `feature/v2-functional-dogfood-gauntlet` adds the repeatable v2 fixture and terminal gauntlet that proves inspect/search/read/propose/TestGate/repair on a copied workspace.
 
 ## v1 RC — 2026-05-28
 
@@ -23,8 +24,8 @@ Prepared release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](./RELEASE-NOTES-v0.1.0
 
 Repository state:
 
-- `main` @ `1f864b4` includes PR #12–#15 (RC gauntlet through final closeout docs), native Flash Tab completion, and first-run agent surface polish.
-- Local working tree is clean except `.serena/`, which is intentionally untracked.
+- `main` @ `f8d85f9` includes PR #12–#17 (v1 RC through v2.0 bounded runtime), native Flash Tab completion, first-run agent surface polish, and internal v2 tools.
+- Working tree cleanliness is checked per branch before merge; `.serena/` may exist as an intentionally untracked local tool directory.
 
 Compared with the original LemonWoo specification:
 
@@ -51,7 +52,19 @@ Current stage summary:
 - **Agent programming loop:** implemented and tested with mocks/fixtures.
 - **Live API proof:** in-app dogfood PASS by operator attestation; CLI smoke optional with shell key, or re-run manual dogfood with terminal cross-check before tag if stricter evidence is desired.
 - **Public/release docs:** ready.
-- **Next decision:** merge v2.0 agent runtime PR when audit-clean; optional new tag after v2 dogfood.
+- **Next decision:** merge the v2 functional gauntlet, then run in-app dogfood on `fixtures/v2-multi-file-agent` with the key already stored in LemonWoo.app.
+
+## 2026-05-28 — v2.0 functional dogfood gauntlet
+
+- Added `fixtures/v2-multi-file-agent`, a seeded-red multi-file invoice fixture with bugs split across calculation, tax rounding, and currency formatting.
+- Added `scripts/v2-functional-gauntlet.mjs` and root command `pnpm v2:gauntlet`.
+- The gauntlet copies the fixture to a temp workspace, runs the real `runAgentTask` v2 loop with deterministic mock DeepSeek responses, exercises internal `search`, `read_file`, `test_gate`, and `propose_diff`, applies the proposed diff outside the runtime, confirms TestGate remains red, reinjects failure output through the repair path, applies a second diff, and verifies final TestGate green.
+- Evidence:
+  - initial fixture `npm test`: red by design.
+  - `pnpm v2:gauntlet`: PASS.
+  - first pass touched `src/invoice.js` and `src/tax.js`.
+  - repair pass touched `src/format.js`.
+  - final TestGate command: `test`.
 
 ## 2026-05-28 — v1 live beta closeout (in progress)
 

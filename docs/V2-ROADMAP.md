@@ -39,6 +39,12 @@ Definition of done:
 - The agent never silently edits files outside the workspace or `.git`.
 - The UI remains the same single panel.
 
+Status:
+
+- Runtime implementation merged in PR #17.
+- Automated terminal gauntlet added in `fixtures/v2-multi-file-agent` and `pnpm v2:gauntlet`.
+- Remaining closeout: repeat the same fixture inside `LemonWoo.app` with the user's DeepSeek key in SecretStorage and terminal-cross-check `npm test` on the opened fixture.
+
 ## v2.1 — Lightweight Context Intelligence
 
 Goal: improve code quality without adding startup-heavy indexing.
