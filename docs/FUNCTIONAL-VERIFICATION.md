@@ -337,4 +337,3 @@ Behavior verification:
 - With no stored key, webview autofocus targets `DeepSeek API key` input.
 - With stored key, webview autofocus targets the agent prompt textarea.
 - `smoke:bundle` remains strict on front window title (`LemonWoo Agent`), so Welcome is not accepted as primary.
-
