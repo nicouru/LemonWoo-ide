@@ -47,6 +47,35 @@ describe("multi-file diff", () => {
     expect(plan.error).toMatch(/no coincide/i);
   });
 
+  it("applies a hunk when generated line numbers are stale but context is unique", () => {
+    const raw = [
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -99,2 +99,2 @@",
+      " export const x = 1;",
+      "-export const y = 1;",
+      "+export const y = 2;"
+    ].join("\n");
+    const files = new Map<string, string>([["src/a.ts", "export const x = 1;\nexport const y = 1;\n"]]);
+    const plan = planMultiFileApply(raw, (rel) => files.get(rel) ?? null);
+    expect(plan.ok).toBe(true);
+    expect(plan.patches[0]?.content).toBe("export const x = 1;\nexport const y = 2;\n");
+  });
+
+  it("rejects stale line numbers when hunk context is ambiguous", () => {
+    const raw = [
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -99,1 +99,1 @@",
+      "-value = 1;",
+      "+value = 2;"
+    ].join("\n");
+    const files = new Map<string, string>([["src/a.ts", "value = 1;\nvalue = 1;\n"]]);
+    const plan = planMultiFileApply(raw, (rel) => files.get(rel) ?? null);
+    expect(plan.ok).toBe(false);
+    expect(plan.error).toMatch(/no coincide/i);
+  });
+
   it("lists touched files", () => {
     expect(touchedFilesFromDiff(sample).sort()).toEqual(["src/a.ts", "src/new.ts"]);
   });
