@@ -26,6 +26,10 @@ else
   echo "Using cached archive: $ZIP_PATH"
 fi
 
+/usr/bin/osascript -e 'tell application id "dev.lemonwoo.ide" to quit' >/dev/null 2>&1 || true
+/usr/bin/killall LemonWoo >/dev/null 2>&1 || true
+/bin/sleep 1
+
 /bin/rm -rf "$APP_DIR" "$BUILD_DIR/unpack"
 /bin/mkdir -p "$BUILD_DIR/unpack"
 /usr/bin/unzip -q "$ZIP_PATH" -d "$BUILD_DIR/unpack"
@@ -41,7 +45,10 @@ fi
 bash "$ROOT/apps/desktop/rebrand-macos.sh" "$APP_DIR" "$ROOT/apps/desktop/product.json"
 
 echo "Building bundled extension..."
-(cd "$ROOT" && pnpm --filter @lemonwoo/deepseek build && pnpm --filter @lemonwoo/test-gate build && pnpm --filter @lemonwoo/agent-runtime build && pnpm --filter lemonwoo-ai build)
+pnpm --filter @lemonwoo/deepseek build
+pnpm --filter @lemonwoo/test-gate build
+pnpm --filter @lemonwoo/agent-runtime build
+pnpm --filter lemonwoo-ai build
 
 EXT_TARGET="$APP_DIR/Contents/Resources/app/extensions/lemonwoo-ai"
 /bin/rm -rf "$EXT_TARGET"

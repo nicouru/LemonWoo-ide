@@ -337,3 +337,34 @@ Behavior verification:
 - With no stored key, webview autofocus targets `DeepSeek API key` input.
 - With stored key, webview autofocus targets the agent prompt textarea.
 - `smoke:bundle` remains strict on front window title (`LemonWoo Agent`), so Welcome is not accepted as primary.
+
+## Final RC validation and fix pass (2026-05-28)
+
+We executed the final RC validation pipeline after implementing critical startup UX and testing fixes:
+- Resolved Webview timing race via `initialized` handshake message from the Webview.
+- Prevented aggressive Welcome tab closing from closing workspace code files by ignoring local `file` scheme URIs.
+- Fixed `manifest.test.ts` relative directory path resolution in Vitest.
+- Hardened `smoke-bundle.sh` to wait in a loop for the application window to render.
+- Hardened `build-mac.sh` to force quit any running LemonWoo process before cleaning the build directory.
+
+### Commands Executed & Results:
+
+```bash
+pnpm rc:check
+pnpm rc:report
+pnpm release:check
+```
+
+Results:
+- **Workspace Build:** PASS (app bundle successfully rebuilt at `dist/LemonWoo.app`).
+- **Workspace Tests:** PASS (all 46 tests across packages and extensions passed cleanly).
+- **Branding check:** PASS (Info.plist and product.json fields verified).
+- **Secrets check:** PASS (Zero secrets leaked).
+- **Licenses check:** PASS (All licenses compatible).
+- **Bundle smoke:** PASS (AppleScript launcher verified `LemonWoo Agent` front window).
+- **V1 scope guard:** PASS (Confirmed no MCP, Stripe, OpenTelemetry, SQLite, SQLite embeddings, multi-agent frameworks, model/provider picker).
+- **Public readiness guard:** PASS (Zero local/developer/users paths leaked).
+- **Document consistency guard:** PASS (Documentation aligned).
+- **Release artifacts verification:** PASS (checksums and structures valid).
+- **Live DeepSeek smoke:** SKIP (expected skip with exit 78 when `DEEPSEEK_API_KEY` is not defined).
+- **DMG Packaging:** Successful packaging of `dist/LemonWoo-0.1.0-mac-arm64.dmg` with checksum `dist/LemonWoo-0.1.0-mac-arm64.dmg.sha256`.

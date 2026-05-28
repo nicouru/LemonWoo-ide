@@ -36,6 +36,13 @@ Current stage summary:
 - **Public/release docs:** ready.
 - **Next decision:** run `pnpm rc:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available, then decide whether to tag the first public v1 RC.
 
+## 2026-05-28 — Final RC validation and fix pass
+
+- Resolved a critical Webview timing race where `ensureKey` was called synchronously on startup before the Webview HTML had fully loaded and set up its message listener. Added an `initialized` handshake message from the Webview script to the extension, triggering state setup only when the Webview is ready.
+- Fixed an aggressive Welcome tab closing issue where `isWelcomeTab` closed normal workspace files containing `"welcome"` in their path or label. Added a scheme check to exclude local files (`scheme: 'file'`) from being auto-closed.
+- Fixed Vitest path resolution in `manifest.test.ts` to resolve paths relative to `import.meta.url` rather than `process.cwd()`. This allows running all tests correctly from any working directory, including the monorepo root.
+- Verified that all unit tests, release checks (`pnpm release:check`), and quality checks (`pnpm rc:check`) pass cleanly.
+
 ## 2026-05-28 — First-run agent surface polish
 
 - Startup prioritizes LemonWoo Agent as the primary surface and safely closes Welcome-only tabs (without closing dirty or pinned user tabs).
