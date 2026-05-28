@@ -141,13 +141,13 @@ PY
         elif [[ "$helper" == *"Helper (Renderer)"* ]]; then
           helper_suffix=".helper.Renderer"
         fi
-        
+
         HELPER_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$HELPER_PLIST")
         if [[ "$HELPER_ID" != "dev.lemonwoo.ide$helper_suffix" ]]; then
           echo "FAIL: Helper ${helper} CFBundleIdentifier is '$HELPER_ID', expected 'dev.lemonwoo.ide$helper_suffix'"
           FAILED=1
         fi
-        
+
         if /usr/bin/plutil -p "$HELPER_PLIST" 2>/dev/null | /usr/bin/grep -Eiq '(vscodium|cursor|visual studio code)'; then
           echo "FAIL: Prohibited branding strings found in Helper ${helper} Info.plist"
           FAILED=1
