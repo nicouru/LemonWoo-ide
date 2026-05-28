@@ -29,4 +29,3 @@ test("buildInvoice calculates cents, tax, and formatted totals", () => {
   assert.equal(invoice.tax, "$1.43");
   assert.equal(invoice.total, "$20.43");
 });
-

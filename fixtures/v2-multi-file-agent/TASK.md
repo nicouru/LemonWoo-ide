@@ -11,4 +11,3 @@ Expected behavior:
 3. The first patch can touch multiple files.
 4. If TestGate remains red, **Corregir con agente** produces a second patch.
 5. Final `npm test` is green.
-

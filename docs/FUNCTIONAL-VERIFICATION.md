@@ -53,10 +53,10 @@ What this proves:
 
 Remaining manual confirmation:
 
-- Open `fixtures/v2-multi-file-agent` in `LemonWoo.app` with the existing DeepSeek key in SecretStorage.
-- Ask the same task from `fixtures/v2-multi-file-agent/TASK.md`.
+- Copy `fixtures/v2-multi-file-agent` to `/tmp/lemonwoo-v2-manual` and open that copied folder in `LemonWoo.app` with the existing DeepSeek key in SecretStorage.
+- Ask the same task from `/tmp/lemonwoo-v2-manual/TASK.md`.
 - Apply diff, run **Verificar**, and use **Corregir con agente** if TestGate is red.
-- Cross-check the opened fixture from the terminal with `npm test`.
+- Cross-check `/tmp/lemonwoo-v2-manual` from the terminal with `npm test`.
 
 ## v1 final RC validation run (2026-05-28, main @ 7257be0)
 

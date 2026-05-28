@@ -31,4 +31,3 @@ export function buildInvoice(items, taxBasisPoints = 750) {
     total: formatUsd(totalCents)
   };
 }
-

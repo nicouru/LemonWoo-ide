@@ -90,7 +90,12 @@ Usá el fixture del repo para validar el flujo completo sin depender de un proye
 Usá este fixture para validar la parte nueva de v2.0: el agente debe inspeccionar, buscar, proponer un patch multi-archivo, verificar y reparar si queda un fallo.
 
 1. **Preparar workspace**
-   - En LemonWoo: `Archivo` → `Abrir carpeta...` → elegí `fixtures/v2-multi-file-agent`.
+   - No abras el fixture versionado directamente. Primero creá una copia temporal:
+     ```bash
+     rm -rf /tmp/lemonwoo-v2-manual
+     cp -R fixtures/v2-multi-file-agent /tmp/lemonwoo-v2-manual
+     ```
+   - En LemonWoo: `Archivo` → `Abrir carpeta...` → elegí `/tmp/lemonwoo-v2-manual`.
 2. **Confirmar estado inicial**
    - En terminal, desde ese fixture, corré `npm test`.
    - Debe fallar antes de aplicar cambios.
@@ -104,7 +109,7 @@ Usá este fixture para validar la parte nueva de v2.0: el agente debe inspeccion
    - Clic en **Verificar**.
    - Si TestGate queda rojo, usá **Corregir con agente**.
 6. **Cross-check terminal**
-   - Corré `npm test` en el fixture abierto.
+   - Corré `npm test` en `/tmp/lemonwoo-v2-manual`.
    - Debe terminar verde.
 7. **Automatizado sin key**
    ```bash

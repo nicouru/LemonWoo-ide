@@ -6,4 +6,3 @@ export const PRODUCTS = [
 export function findProduct(sku) {
   return PRODUCTS.find((product) => product.sku === sku);
 }
-
