@@ -18,6 +18,11 @@ export interface AgentToolResult {
   tool: AgentToolName;
   output: string;
   truncated?: boolean;
+  /** Set by propose_diff when the patch is valid and apply-ready. */
+  hasDiff?: boolean;
+  rawDiff?: string | null;
+  touchedFiles?: string[];
+  warning?: string;
 }
 
 export interface AgentStep {

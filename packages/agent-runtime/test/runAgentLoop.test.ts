@@ -114,6 +114,65 @@ describe("v2 agent loop", () => {
     ).rejects.toBeInstanceOf(DeepSeekAbortError);
   });
 
+  it("finishes with applicable diff when model only uses propose_diff tool", async () => {
+    const diffPayload = "--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-a\n+b\n";
+    const toolBlock = `<lemonwoo_tool>${JSON.stringify({
+      tool: "propose_diff",
+      args: { diff: `\`\`\`diff\n${diffPayload}\n\`\`\`` }
+    })}</lemonwoo_tool>`;
+    const mockClient = {
+      chatStream: async function* () {
+        yield toolBlock;
+        yield "\nListo.";
+      },
+      chat: async () => ({
+        text: "unused",
+        mode: "think" as const,
+        modelLabel: "pro" as const,
+        modelId: "deepseek-v4-pro",
+        usedAlias: false
+      })
+    } as unknown as DeepSeekClient;
+
+    let done;
+    for await (const event of runAgentLoop({
+      client: mockClient,
+      context: { userTask: "fix file" }
+    })) {
+      if (event.type === "done") done = event.result;
+    }
+
+    expect(done?.hasDiff).toBe(true);
+    expect(done?.rawDiff).toContain("--- a/src/a.ts");
+    expect(done?.touchedFiles).toContain("src/a.ts");
+  });
+
+  it("rejects invalid propose_diff tool without enabling apply", async () => {
+    const mockClient = {
+      chatStream: async function* () {
+        yield '<lemonwoo_tool>{"tool":"propose_diff","args":{"diff":"not a diff"}}</lemonwoo_tool>';
+      },
+      chat: async () => ({
+        text: "x",
+        mode: "think" as const,
+        modelLabel: "pro" as const,
+        modelId: "x",
+        usedAlias: false
+      })
+    } as unknown as DeepSeekClient;
+
+    let done;
+    for await (const event of runAgentLoop({
+      client: mockClient,
+      context: { userTask: "x" },
+      limits: { maxSteps: 2, maxRepairAttempts: 0, maxToolOutputChars: 1000, maxSearchResults: 5, maxFileReadChars: 1000 }
+    })) {
+      if (event.type === "done") done = event.result;
+    }
+    expect(done?.hasDiff).toBe(false);
+    expect(done?.rawDiff).toBeNull();
+  });
+
   it("routes agent prompts with inline to Pro via loop", async () => {
     let task = "";
     const mockClient = {

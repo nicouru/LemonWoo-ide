@@ -2,7 +2,7 @@ import { DeepSeekAbortError } from "@lemonwoo/deepseek";
 import { routeTask, shouldEscalateToPro, type LemonWooTaskKind } from "@lemonwoo/deepseek";
 import type { AgentRuntimeEvent, RunAgentLoopInput, RuntimeLimits, RuntimeLoopState } from "./contracts.js";
 import { DEFAULT_RUNTIME_LIMITS } from "./contracts.js";
-import { evaluateDiffProposal } from "./multiDiff.js";
+import { evaluateDiffProposal, type DiffProposal } from "./multiDiff.js";
 import { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
 import { parseToolRequests } from "./toolParse.js";
 import { executeTool, type ToolExecutionContext } from "./tools.js";
@@ -31,6 +31,12 @@ function checkAbort(signal?: AbortSignal): void {
   }
 }
 
+function pickFinalDiff(textDiff: DiffProposal, toolDiff: DiffProposal | null): DiffProposal {
+  if (textDiff.hasDiff && textDiff.rawDiff) return textDiff;
+  if (toolDiff?.hasDiff && toolDiff.rawDiff) return toolDiff;
+  return textDiff;
+}
+
 function formatToolLog(results: { tool: string; output: string }[]): string {
   if (!results.length) return "";
   return results
@@ -49,6 +55,7 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
   let mode: "pro" | "flash" = "pro";
   let lastText = "";
   let lastDiff = evaluateDiffProposal("");
+  let pendingToolDiff: DiffProposal | null = null;
 
   const runRepair = Boolean(input.fixTestOutput);
   if (runRepair) {
@@ -131,13 +138,31 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
           phase: "done",
           summary: result.output.slice(0, 200)
         };
+        if (req.tool === "propose_diff" && result.ok && result.hasDiff && result.rawDiff) {
+          pendingToolDiff = {
+            hasDiff: true,
+            rawDiff: result.rawDiff,
+            touchedFiles: result.touchedFiles ?? [],
+            warning: result.warning
+          };
+        }
       }
       volatileExtra = formatToolLog(state.toolResults);
+
+      const onlyProposeDiff =
+        pendingToolDiff?.hasDiff &&
+        toolRequests.length > 0 &&
+        toolRequests.every((t) => t.tool === "propose_diff");
+      if (onlyProposeDiff && pendingToolDiff) {
+        lastDiff = pendingToolDiff;
+        break;
+      }
+
       stepIndex += 1;
       continue;
     }
 
-    lastDiff = evaluateDiffProposal(lastText);
+    lastDiff = pickFinalDiff(evaluateDiffProposal(lastText), pendingToolDiff);
     if (
       routeTask(task) === "write" &&
       shouldEscalateToPro({
@@ -168,6 +193,10 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
     stepIndex += 1;
   }
 
+  if (!lastDiff.hasDiff) {
+    lastDiff = pickFinalDiff(evaluateDiffProposal(lastText), pendingToolDiff);
+  }
+
   if (state.stoppedReason === "max_steps" && !lastDiff.hasDiff) {
     const message = lastDiff.warning
       ? `${lastText}\n\n${lastDiff.warning}`
@@ -186,10 +215,14 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
     return;
   }
 
+  const diffBody =
+    lastDiff.hasDiff && lastDiff.rawDiff && !lastText.includes("```diff")
+      ? `\`\`\`diff\n${lastDiff.rawDiff}\n\`\`\``
+      : lastText;
   const message = lastDiff.warning
-    ? `${lastText}\n\n${lastDiff.warning}`
+    ? `${diffBody}\n\n${lastDiff.warning}`
     : lastDiff.hasDiff
-      ? `Propuesta (todavía no aplicada):\n\n${lastText}`
+      ? `Propuesta (todavía no aplicada):\n\n${diffBody}`
       : lastText;
 
   yield { type: "message", text: message };

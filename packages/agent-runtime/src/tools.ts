@@ -62,9 +62,17 @@ export async function executeTool(
       const diffText = request.args.diff ?? request.args.text ?? "";
       const proposal = evaluateDiffProposal(diffText);
       if (!proposal.hasDiff) {
-        return fail("propose_diff", proposal.warning ?? "Invalid or empty diff proposal.");
+        return {
+          ...fail("propose_diff", proposal.warning ?? "Invalid or empty diff proposal."),
+          hasDiff: false,
+          rawDiff: null,
+          touchedFiles: [],
+          warning: proposal.warning
+        };
       }
-      ctx.touchedFiles.push(...proposal.touchedFiles);
+      for (const f of proposal.touchedFiles) {
+        if (!ctx.touchedFiles.includes(f)) ctx.touchedFiles.push(f);
+      }
       const summary = [
         `Diff proposal (${proposal.touchedFiles.length} file(s)): ${proposal.touchedFiles.join(", ")}`,
         proposal.warning ?? ""
@@ -72,7 +80,16 @@ export async function executeTool(
         .filter(Boolean)
         .join("\n");
       const bounded = boundOutput(redactToolOutput(summary), limits.maxToolOutputChars);
-      return { ok: true, tool: "propose_diff", output: bounded.text, truncated: bounded.truncated };
+      return {
+        ok: true,
+        tool: "propose_diff",
+        output: bounded.text,
+        truncated: bounded.truncated,
+        hasDiff: true,
+        rawDiff: proposal.rawDiff,
+        touchedFiles: proposal.touchedFiles,
+        warning: proposal.warning
+      };
     }
 
     case "test_gate": {

@@ -17,7 +17,7 @@ import {
   stopAllPreviewServers,
   stopPreviewServer
 } from "./localActions.js";
-import { gatherAgentContext } from "./agentContext.js";
+import { gatherAgentContext, runRg } from "./agentContext.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
 import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
@@ -278,6 +278,14 @@ function buildAgentAdapters(
       const abs = join(workspace, relPath);
       if (!existsSync(abs)) return null;
       return readFileSync(abs, "utf8");
+    },
+    searchWorkspace: async (query) => {
+      const raw = await runRg(workspace, query, signal, 20);
+      return redactSecrets(raw)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 20);
     },
     runTestGate: async (files) => {
       const list = files.length ? files : changedFiles();

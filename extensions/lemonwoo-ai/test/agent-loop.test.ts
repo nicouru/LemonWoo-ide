@@ -23,6 +23,8 @@ describe("agent programming loop wiring", () => {
     const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
     expect(src).toContain("buildAgentAdapters");
     expect(src).toContain("isSafeRelPath");
+    expect(src).toContain("searchWorkspace:");
+    expect(src).toContain("runRg");
     expect(src).toContain('event.type === "tool"');
     expect(src).not.toContain("modelSelect");
     expect(src).not.toContain("providerSelect");

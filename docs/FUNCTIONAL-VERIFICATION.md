@@ -29,7 +29,7 @@ Automated coverage (`packages/agent-runtime/test/runAgentLoop.test.ts`, `tools.t
 | `verify-release-artifacts` / `hdiutil verify` | PASS on `dist/LemonWoo-0.1.0-mac-arm64.dmg` |
 | `pnpm smoke:agent:live` | **SKIP exit 78** — `DEEPSEEK_API_KEY` not set in validation environment |
 | Manual dogfood in `LemonWoo.app` | **PASS** by operator attestation (2026-05-28, key in SecretStorage only); workspace path/file mutation not terminal-cross-verified |
-| Git tag `v0.1.0-rc.1` | **Pending** — requires explicit operator confirmation after accepting the in-app attestation / fixture cross-check note |
+| Git tag `v0.1.0-rc.1` | **Published** — see git tag `v0.1.0-rc.1` on `main` |
 
 ## In-app live dogfood (2026-05-28, main @ `1f864b4`)
 

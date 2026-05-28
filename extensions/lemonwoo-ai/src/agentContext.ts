@@ -84,12 +84,37 @@ function deriveRgQuery(prompt: string): string | null {
   return words.length ? words[words.length - 1]! : null;
 }
 
-export async function runRg(workspace: string, query: string, signal?: AbortSignal): Promise<string> {
+export async function runRg(
+  workspace: string,
+  query: string,
+  signal?: AbortSignal,
+  maxCount = 40
+): Promise<string> {
   return await new Promise((resolve) => {
-    const child = spawn("rg", ["-n", "--max-count", "40", query, "."], {
-      cwd: workspace,
-      shell: false
-    });
+    const child = spawn(
+      "rg",
+      [
+        "-n",
+        "--max-count",
+        String(maxCount),
+        "--glob",
+        "!.git/**",
+        "--glob",
+        "!node_modules/**",
+        "--glob",
+        "!dist/**",
+        "--glob",
+        "!build/**",
+        "--glob",
+        "!out/**",
+        query,
+        "."
+      ],
+      {
+        cwd: workspace,
+        shell: false
+      }
+    );
     let out = "";
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
