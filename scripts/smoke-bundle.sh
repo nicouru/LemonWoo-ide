@@ -8,6 +8,14 @@ APP="$ROOT/dist/LemonWoo.app"
 [[ -f "$APP/Contents/Info.plist" ]] || { echo "Missing Info.plist" >&2; exit 1; }
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
 
+/usr/bin/osascript -e 'tell application id "dev.lemonwoo.ide" to quit' >/dev/null 2>&1 || true
+for _ in {1..20}; do
+  if ! /usr/bin/pgrep -f "$APP/Contents/MacOS/$EXECUTABLE" >/dev/null; then
+    break
+  fi
+  /bin/sleep 0.25
+done
+
 /usr/bin/open "$APP"
 /bin/sleep 5
 

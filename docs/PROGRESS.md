@@ -1,5 +1,44 @@
 # PROGRESS
 
+## Current stage — 2026-05-28
+
+LemonWoo is now in **v1 release-candidate hardening**.
+
+Repository state:
+
+- `main` is stable through public release guardrails (`0bb7c42`).
+- The latest implementation lives in PR #6 / `feature/live-deepseek-agent-ux-v1` and is mergeable.
+- Local working tree is clean except `.serena/`, which is intentionally untracked.
+
+Compared with the original LemonWoo specification:
+
+| Original requirement | Current status | Notes |
+| --- | --- | --- |
+| Standalone macOS app, not VS Code extension | Done | `dist/LemonWoo.app` is generated from repacked VSCodium and smoke-tested. |
+| LemonWoo branding and isolated app identity | Done | Bundle id, executable, app name, data folder, helpers, product metadata, and ad-hoc signing are patched. |
+| Single agent window as primary surface | Done in PR #6 | Strict `smoke:bundle` now requires the front window to be `LemonWoo Agent`; `Welcome` is no longer accepted. |
+| One DeepSeek API key, BYOK | Done in PR #6 | Key is validated before `SecretStorage` write; invalid/network/rate-limit states are surfaced without logging the key. |
+| Automatic Pro/Flash routing, no model picker | Done | Router keeps `tab`/`inline-edit`/`small-write` on Flash and agent/refactor/debug/verify on Pro. UI does not expose model/provider selection. |
+| Agent can program locally | Implemented as v1 fallback | `runAgentTask` is a single-shot DeepSeek call with preassembled local context, streaming, diff proposal, apply, TestGate, and fix loop. It is not dynamic tool-calling. |
+| Safe diff preview/apply | Done | Multi-file unified diffs, new files, path traversal/.git guards, hunk-context validation, and multiple-diff rejection are covered. |
+| TestGate verification/fix loop | Done | TestGate runs selected scripts; failed output can be reinjected through **Corregir con agente**. |
+| Local preview/dev-server action | Done | Prompt intent can start/reuse/stop a local server and show a concrete URL. |
+| Release packaging and public guardrails | Done | DMG packaging, release checks, scope guard, public readiness, QA and troubleshooting docs are present. |
+| Live DeepSeek vertical slice | Gated / pending real key | `smoke:agent:live` exists and exits 78 with `SKIP: falta DEEPSEEK_API_KEY` when no key is available. Needs one real-key run before calling v1 fully proven. |
+| Tab autocomplete as editor feature | Not implemented as UI feature | Flash routing exists for `tab`/`inline-edit`, but no native inline completion provider or bundled Continue UI-free integration is wired yet. |
+| MCP, multi-agent, persistent memory, Stripe, OpenTelemetry, browser agents | Explicitly out of v1 | Guardrails enforce this scope. These remain v1.1+ roadmap only. |
+
+Current stage summary:
+
+- **Product shell:** ready.
+- **Agent surface:** ready.
+- **Agent programming loop:** implemented and tested with mocks/fixtures.
+- **Live API proof:** pending `DEEPSEEK_API_KEY` run.
+- **Public/release docs:** ready.
+- **Next decision:** merge PR #6 to `main`, then run `pnpm release:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available.
+
+Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
+
 ## 2026-05-27
 
 - Created LemonWoo v1 monorepo with required directory layout:
@@ -90,7 +129,7 @@ pnpm check:licenses
   - Diff-containing responses are labeled as `Propuesta` until apply succeeds; after apply the panel shows `diff aplicado`.
 - Added preview fixture at `fixtures/static-site/index.html` for manual verification flow.
 - Added mandatory tests for local action routing in `extensions/lemonwoo-ai/test/local-actions.test.ts`.
-- Updated bundle smoke script to accept real front window title variants (`LemonWoo Agent ...`) and degrade gracefully if macOS denies System Events permission.
+- Updated bundle smoke script to require a real `LemonWoo Agent` front window and degrade gracefully only if macOS denies System Events permission.
 
 Executed checks after corrections:
 
@@ -169,3 +208,46 @@ Result (2026-05-28):
 - Repo tree: `repoFiles.ts` keeps fixed workspace root for paths like `src/sum.ts`.
 - Fix loop: `lastUserTask` preserved for **Corregir con agente**.
 - Documented `runAgentTask` as v1 single-shot fallback (not dynamic tool-calling).
+
+## 2026-05-28 — Live DeepSeek agent UX hardening
+
+- Onboarding key path now validates against DeepSeek before storing in `SecretStorage`.
+  - Success path: stores key only on `validateKey.status === valid`.
+  - Failure path: `Key inválida.` / `Sin red o DeepSeek no disponible.` without storing.
+- Added visible incremental agent streaming in single panel via `runAgentTask` `delta` events.
+  - Falls back to buffered response if stream path fails.
+  - Stop keeps real abort behavior with no further token updates.
+- Improved UX messaging without adding UI complexity:
+  - `Conectando DeepSeek...`
+  - `Rate limit, reintentando.`
+  - `Diff listo para revisar.`
+  - `Tests fallaron, podés corregir con agente.`
+- Diff/apply hardening:
+  - Rejects multiple fenced diff blocks as unsafe ambiguity.
+  - Keeps path traversal and `.git` protections intact.
+  - Does not enable apply on empty/non-diff responses.
+- Added live smoke script `scripts/live-agent-smoke.mjs` + root script `smoke:agent:live`.
+  - Gate behavior: exits 78 with `SKIP: falta DEEPSEEK_API_KEY` if key is missing.
+  - Uses temp copy of `fixtures/agent-loop-ts`; never mutates original fixture.
+- Updated QA/Troubleshooting docs for real-world failure cases (invalid key, rate limit, streaming cut, stop behavior, diff mismatch, TestGate deps, live smoke skip).
+- Fixed bundled extension activation in the packaged app:
+  - `lemonwoo-ai` keeps `"type": "module"` but now points `"main"` to `./dist/extension.cjs`.
+  - esbuild emits `dist/extension.cjs`, avoiding `module is not defined in ES module scope`.
+  - `smoke-bundle.sh` now quits stale LemonWoo processes before launch, so it tests the freshly built app.
+  - Strict smoke requires the front window to be `LemonWoo Agent`.
+
+Executed checks for this block:
+
+```bash
+pnpm -r test
+pnpm -r build
+pnpm check:branding
+pnpm check:secrets
+pnpm check:licenses
+pnpm smoke:bundle
+bash scripts/verify-v1-scope.sh
+bash scripts/verify-public-readiness.sh
+bash scripts/verify-release-artifacts.sh
+pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
+pnpm release:check
+```

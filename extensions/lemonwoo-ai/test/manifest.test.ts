@@ -14,6 +14,12 @@ describe("manifest", () => {
     expect(pkg.activationEvents).toContain("onStartupFinished");
   });
 
+  it("uses a CommonJS bundle entry despite package type module", () => {
+    const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
+    expect(pkg.type).toBe("module");
+    expect(pkg.main).toBe("./dist/extension.cjs");
+  });
+
   it("does not expose model/provider pickers", () => {
     const pkgRaw = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
     expect(pkgRaw).not.toContain("modelSelect");

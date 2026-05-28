@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  countDiffBlocks,
   isSafeRelPath,
   parseMultiFileDiff,
   planMultiFileApply,
@@ -48,5 +49,12 @@ describe("multi-file diff", () => {
 
   it("lists touched files", () => {
     expect(touchedFilesFromDiff(sample).sort()).toEqual(["src/a.ts", "src/new.ts"]);
+  });
+
+  it("rejects multiple fenced diff blocks", () => {
+    const raw = "```diff\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-a\n+b\n```\ntext\n```diff\n--- a/b.ts\n+++ b/b.ts\n@@ -1 +1 @@\n-c\n+d\n```";
+    expect(countDiffBlocks(raw)).toBe(2);
+    const plan = planMultiFileApply(raw, () => "a\n");
+    expect(plan.ok).toBe(false);
   });
 });

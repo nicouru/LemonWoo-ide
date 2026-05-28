@@ -19,6 +19,13 @@ describe("agent programming loop wiring", () => {
     expect(src).not.toContain("modelSelect");
   });
 
+  it("validates API key before storing", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("validateKey()");
+    expect(src).toContain("Conectando DeepSeek...");
+    expect(src).toContain("Key inválida.");
+  });
+
   it("shows Corregir con agente only on test failure path", () => {
     const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
     expect(src).toContain("fixAgent");
@@ -40,6 +47,20 @@ describe("agent programming loop wiring", () => {
     expect(tracking).toContain('scheme === "file"');
     expect(ext).toContain("getPreferredTextEditor");
     expect(ext).toContain("registerTextEditorTracking");
+  });
+
+  it("renders streaming updates and stop cancellation wiring", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("event.type === \"delta\"");
+    expect(src).toContain("type === 'stream'");
+    expect(src).toContain("activeAbort?.abort()");
+  });
+
+  it("blocks ambiguous multi-diff apply", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/extension.ts"), "utf8");
+    expect(src).toContain("hasMultipleDiffBlocks");
+    expect(src).toContain("Múltiples bloques diff detectados");
+    expect(src).toContain("hasDiff: event.result.hasDiff");
   });
 
   it("invokes rg only on demand", () => {

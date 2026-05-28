@@ -22,15 +22,60 @@ export interface MultiApplyResult {
   error?: string;
 }
 
+export interface DiffProposal {
+  rawDiff: string | null;
+  hasDiff: boolean;
+  touchedFiles: string[];
+  warning?: string;
+}
+
 const DIFF_FENCE_RE = /```diff\s*([\s\S]*?)```/g;
 
+export function countDiffBlocks(raw: string): number {
+  return [...raw.matchAll(DIFF_FENCE_RE)].filter((m) => Boolean(m[1]?.trim())).length;
+}
+
 export function extractDiffText(raw: string): string {
+  const blocks = countDiffBlocks(raw);
+  if (blocks > 1) return "";
   const fences: string[] = [];
   for (const match of raw.matchAll(DIFF_FENCE_RE)) {
     if (match[1]?.trim()) fences.push(match[1].trim());
   }
   if (fences.length) return fences.join("\n");
   return raw.trim();
+}
+
+export function evaluateDiffProposal(text: string): DiffProposal {
+  const blocks = countDiffBlocks(text);
+  if (blocks === 0) {
+    return { rawDiff: null, hasDiff: false, touchedFiles: [] };
+  }
+  if (blocks > 1) {
+    return {
+      rawDiff: null,
+      hasDiff: false,
+      touchedFiles: [],
+      warning: "Se detectaron múltiples bloques diff; LemonWoo requiere una única propuesta diff para aplicar con seguridad."
+    };
+  }
+
+  const rawDiff = extractDiffText(text);
+  const patches = parseMultiFileDiff(rawDiff);
+  if (!patches.length) {
+    return {
+      rawDiff: null,
+      hasDiff: false,
+      touchedFiles: [],
+      warning: "El bloque diff no es válido para aplicar."
+    };
+  }
+  const touchedFiles = [...new Set(patches.map((p) => p.relPath))];
+  return {
+    rawDiff,
+    hasDiff: true,
+    touchedFiles
+  };
 }
 
 export function normalizeRelPath(rawPath: string): string {
