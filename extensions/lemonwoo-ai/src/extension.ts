@@ -46,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function openAgentPanel(context: vscode.ExtensionContext) {
+  await closeWelcomeTabs();
   if (activePanel) {
     activePanel.reveal(vscode.ViewColumn.One);
     await ensureKey(context, activePanel);
@@ -127,6 +128,31 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     }
   });
   await ensureKey(context, panel);
+}
+
+function isWelcomeTab(tab: vscode.Tab): boolean {
+  const label = tab.label.toLowerCase();
+  if (label.includes("welcome")) {
+    return true;
+  }
+  const input = tab.input;
+  if (input instanceof vscode.TabInputText) {
+    const value = `${input.uri.scheme}:${input.uri.path}`.toLowerCase();
+    return value.includes("walkthrough") || value.includes("getting-started") || value.includes("welcome");
+  }
+  if (input instanceof vscode.TabInputWebview) {
+    return input.viewType.toLowerCase().includes("welcome") || input.viewType.toLowerCase().includes("gettingstarted");
+  }
+  return false;
+}
+
+async function closeWelcomeTabs(): Promise<void> {
+  const closable = vscode.window.tabGroups.all
+    .flatMap((group) => group.tabs)
+    .filter((tab) => !tab.isDirty && !tab.isPinned && isWelcomeTab(tab));
+  if (closable.length > 0) {
+    await vscode.window.tabGroups.close(closable, true);
+  }
 }
 
 async function ensureKey(context: vscode.ExtensionContext, panel: vscode.WebviewPanel) {
@@ -429,6 +455,12 @@ function renderHtml(): string {
     function runTestGate(){ vscode.postMessage({type:'runTestGate'}); }
     function fixAgent(){ vscode.postMessage({type:'fixAgent'}); }
     function stopServer(){ vscode.postMessage({type:'stopServer'}); }
+    function focusKey(){
+      setTimeout(() => document.getElementById('key')?.focus(), 0);
+    }
+    function focusPrompt(){
+      setTimeout(() => document.getElementById('prompt')?.focus(), 0);
+    }
     function escapeHtml(value){
       return String(value || '').replace(/[&<>"']/g, (ch) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -471,9 +503,11 @@ function renderHtml(): string {
       }
       if (m.type === 'needKey') {
         document.getElementById('keyBox').style.display='block';
+        focusKey();
       }
       if (m.type === 'ready') {
         document.getElementById('keyBox').style.display='none';
+        focusPrompt();
       }
       if (m.type === 'testOutput') {
         document.getElementById('out').textContent = m.text;

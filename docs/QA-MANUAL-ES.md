@@ -25,7 +25,6 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 
 1. **Apertura automática**: Al abrir la aplicación, confirma que aparece automáticamente la vista **LemonWoo Agent** como superficie principal.
    - Si aparece una pestaña **Welcome**, debe cerrarse/ocultarse automáticamente y no quedar como superficie primaria.
-   - Si aparece una pestaña **Welcome**, debe cerrarse/ocultarse automáticamente y no quedar como superficie primaria.
 2. **BYOK (DeepSeek Key)**:
    - En el panel del agente verás un campo para ingresar tu API key de DeepSeek.
    - Pega tu clave de DeepSeek (debe comenzar con `sk-`).
@@ -33,8 +32,6 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
    - Debes ver `Conectando DeepSeek...` y luego estado listo.
    - Si la key es incorrecta, la app debe mostrar `Key inválida.` y no guardarla.
    - Cierra y vuelve a abrir LemonWoo para verificar que la clave sigue guardada y no tienes que volver a pegarla.
-   - Sin key guardada, el foco inicial debe quedar en el input `DeepSeek API key`.
-   - Con key guardada, el foco inicial debe quedar en la caja de prompt del agente.
    - Sin key guardada, el foco inicial debe quedar en el input `DeepSeek API key`.
    - Con key guardada, el foco inicial debe quedar en la caja de prompt del agente.
 
