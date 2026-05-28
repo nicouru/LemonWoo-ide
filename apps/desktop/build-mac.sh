@@ -45,10 +45,12 @@ fi
 bash "$ROOT/apps/desktop/rebrand-macos.sh" "$APP_DIR" "$ROOT/apps/desktop/product.json"
 
 echo "Building bundled extension..."
+pushd "$ROOT" >/dev/null
 pnpm --filter @lemonwoo/deepseek build
 pnpm --filter @lemonwoo/test-gate build
 pnpm --filter @lemonwoo/agent-runtime build
 pnpm --filter lemonwoo-ai build
+popd >/dev/null
 
 EXT_TARGET="$APP_DIR/Contents/Resources/app/extensions/lemonwoo-ai"
 /bin/rm -rf "$EXT_TARGET"

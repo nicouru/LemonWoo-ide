@@ -38,9 +38,11 @@ Current stage summary:
 
 ## 2026-05-28 — Final RC validation and fix pass
 
-- Resolved a critical Webview timing race where `ensureKey` was called synchronously on startup before the Webview HTML had fully loaded and set up its message listener. Added an `initialized` handshake message from the Webview script to the extension, triggering state setup only when the Webview is ready.
+- Resolved a critical Webview timing race where `ensureKey` was called synchronously on startup before the Webview HTML had fully loaded and set up its message listener. Registered `onDidReceiveMessage` before setting `webview.html = renderHtml()`, and added an `initialized` handshake message from the Webview script to the extension, triggering state setup only when the Webview is ready.
 - Fixed an aggressive Welcome tab closing issue where `isWelcomeTab` closed normal workspace files containing `"welcome"` in their path or label. Added a scheme check to exclude local files (`scheme: 'file'`) from being auto-closed.
-- Fixed Vitest path resolution in `manifest.test.ts` to resolve paths relative to `import.meta.url` rather than `process.cwd()`. This allows running all tests correctly from any working directory, including the monorepo root.
+- Fixed Vitest path resolution in `manifest.test.ts` to resolve paths relative to `import.meta.url` rather than `process.cwd()`. Added a test in `manifest.test.ts` to enforce the order of `onDidReceiveMessage` registration and `webview.html` assignment.
+- Hardened `build-mac.sh` to change directories to the repository root directory before executing `pnpm` builds, ensuring CWD independence.
+- Corrected test count references in `docs/FUNCTIONAL-VERIFICATION.md` to reference general workspace tests passing cleanly.
 - Verified that all unit tests, release checks (`pnpm release:check`), and quality checks (`pnpm rc:check`) pass cleanly.
 
 ## 2026-05-28 — First-run agent surface polish

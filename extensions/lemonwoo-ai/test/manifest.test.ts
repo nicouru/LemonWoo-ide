@@ -83,4 +83,13 @@ describe("manifest", () => {
     expect(src).toContain("!tab.isDirty && !tab.isPinned");
     expect(src).toContain("vscode.window.tabGroups.close");
   });
+
+  it("registers onDidReceiveMessage before setting webview.html to prevent handshake race", () => {
+    const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
+    const idxMessageListener = src.indexOf("panel.webview.onDidReceiveMessage");
+    const idxHtmlAssignment = src.indexOf("panel.webview.html = renderHtml()");
+    expect(idxMessageListener).toBeGreaterThan(-1);
+    expect(idxHtmlAssignment).toBeGreaterThan(-1);
+    expect(idxMessageListener).toBeLessThan(idxHtmlAssignment);
+  });
 });

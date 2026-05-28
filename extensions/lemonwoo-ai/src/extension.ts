@@ -64,7 +64,6 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     activeAbort = undefined;
     stopAllPreviewServers();
   });
-  panel.webview.html = renderHtml();
   panel.webview.onDidReceiveMessage(async (msg) => {
     if (msg.type === "initialized") {
       await ensureKey(context, panel);
@@ -130,6 +129,7 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
       await handleTestGate(panel);
     }
   });
+  panel.webview.html = renderHtml();
 }
 
 function isWelcomeTab(tab: vscode.Tab): boolean {

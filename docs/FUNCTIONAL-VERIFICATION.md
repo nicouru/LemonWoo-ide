@@ -357,7 +357,7 @@ pnpm release:check
 
 Results:
 - **Workspace Build:** PASS (app bundle successfully rebuilt at `dist/LemonWoo.app`).
-- **Workspace Tests:** PASS (all 46 tests across packages and extensions passed cleanly).
+- **Workspace Tests:** PASS (all workspace tests passed cleanly).
 - **Branding check:** PASS (Info.plist and product.json fields verified).
 - **Secrets check:** PASS (Zero secrets leaked).
 - **Licenses check:** PASS (All licenses compatible).
