@@ -4,7 +4,7 @@ This file records command-level evidence for the required v1 vertical slice.
 
 ## Status
 
-- Partial pass with executable app bundle and core checks green.
+- Automated pass with executable app bundle, release checks, native Tab completion tests, and core guardrails green.
 - Live DeepSeek smoke remains environment-gated by user API key and in-app manual run.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
@@ -310,14 +310,15 @@ We verified the native Tab autocomplete functionality through automated testing 
 ### Automated Tests
 The new tests in `extensions/lemonwoo-ai/test/inlineCompletion.test.ts` verify:
 1. **API Key Checks**: Autocomplete is disabled if no DeepSeek API key is present in `SecretStorage`.
-2. **Exclusion Boundaries**: Files inside `.git/`, `node_modules/`, `dist/`, `build/`, `out/` or larger than 1MB are ignored.
+2. **Exclusion Boundaries**: Files inside `.git/`, `node_modules/`, `dist/`, `build/`, `out/`, sensitive credential paths, non-file schemes, non-code languages, or files larger than 1MB are ignored.
 3. **Context Limits**: Text context is limited to the last 3000 characters before the cursor and the first 1500 characters after the cursor.
-4. **Debounce & Cancellation**: Rapid typing aborts the previous request's `AbortSignal` to prevent lagging or editor blocking.
+4. **Debounce & Cancellation**: Rapid typing waits 300ms before touching the network and aborts stale requests.
 5. **Secret Redaction**: Errors redact the API key.
 6. **Conversion**: Successful completions return a `vscode.InlineCompletionItem` with the expected ghost text.
+7. **Disconnect safety**: Disconnecting the API key resets cached clients and aborts in-flight completion requests.
 
 All workspace tests run and pass cleanly:
 ```bash
 pnpm -r test
 ```
-Result: `Test Files  5 passed (5) | Tests  40 passed (40)` for the extension suite.
+Latest hardening result: `Test Files  5 passed (5) | Tests  47 passed (47)` for the extension suite.

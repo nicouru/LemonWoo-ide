@@ -6,9 +6,8 @@ Este documento sirve como la lista de verificación final antes de hacer públic
 
 ## 1. Estado Actual Esperado y Ramas
 - [ ] La rama `main` debe contener la base de código estable y rebrandeada de VSCodium.
-- [ ] Todos los PRs activos de funcionalidades invasivas deben estar cerrados o aislados.
-- [ ] La rama de trabajo de Cursor (`feature/agent-programming-loop-v1`, PR #4) debe ser fusionada a `main` antes que este PR #5 (`feature/public-release-guardrails-v1`), ya que los guardrails de alcance (scope guards) deben validarse contra el estado combinado final.
-- [ ] Recordar que el PR #5 no toca el código funcional ni el runtime del agente.
+- [ ] Los bloques v1 ya mergeados deben estar presentes en `main`: agente, preview local, TestGate/fix loop, RC release hardening y native Flash Tab completion.
+- [ ] No debe haber PRs abiertos que modifiquen `extensions/lemonwoo-ai/**`, `packages/deepseek/**`, `packages/agent-runtime/**` o `scripts/**` sin volver a ejecutar la matriz RC.
 - [ ] Volver a ejecutar todos los scripts de guardrails y verificación de release en la rama combinada antes de publicar el release definitivo.
 
 ---
@@ -68,8 +67,7 @@ pnpm release:check
 ---
 
 ## 7. Hallazgos de Auditoría (Audit Findings)
-Durante la preparación del release público v1, se identificaron las siguientes referencias a términos fuera de alcance en archivos activos que no debían ser editados para evitar pisar el trabajo de Cursor:
+Durante la preparación del release público v1, se identificaron referencias a términos fuera de alcance en comentarios o documentación. Son permitidas cuando explican exclusiones y no activan dependencias/runtime fuera de v1:
 - **Archivo**: [packages/deepseek/src/client.ts](../packages/deepseek/src/client.ts) (Líneas 17-18)
   - *Referencia:* Contiene comentarios explicativos indicando que se excluyen de v1 la compatibilidad con el endpoint de Anthropic y FIM beta.
   - *Resolución:* No representan código ejecutable ni configuraciones activas, por lo que son permitidas y se encuentran filtradas de forma segura en `verify-v1-scope.sh`.
-

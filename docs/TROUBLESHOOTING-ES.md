@@ -35,9 +35,8 @@ Esta guía describe los problemas más frecuentes que pueden surgir durante el u
 - **Solución:** Espera unos minutos antes de volver a consultar al agente. LemonWoo muestra `Rate limit, reintentando.` cuando detecta esta situación.
 
 ### No puedo guardar la API key
-- **Causa:** Permisos de escritura denegados en la carpeta de configuraciones de usuario de LemonWoo.
-- **Solución:** Verifica que tu usuario de macOS tiene permisos de escritura en la ruta de configuración del editor:
-  `~/.lemonwoo/`
+- **Causa:** SecretStorage o el almacenamiento local de la app no está disponible en el entorno actual.
+- **Solución:** reinicia LemonWoo y vuelve a conectar la key. LemonWoo no guarda la key en archivos de texto plano.
 
 ---
 
@@ -47,17 +46,22 @@ Esta guía describe los problemas más frecuentes que pueden surgir durante el u
 - **Causa:** El panel lateral fue cerrado manualmente o hubo un error al cargar la extensión `lemonwoo-ai`.
 - **Solución:**
   1. Ve al menú superior: `Ver` -> `Vistas de apariencia` o abre la paleta de comandos (`Cmd+Shift+P`).
-  2. Busca el comando: `LemonWoo: Open Agent Window` o haz clic en el icono del limón en la barra de actividad lateral izquierda.
+  2. Busca el comando: `LemonWoo: Open Agent`.
 
 ### La vista previa local (Local Preview) no levanta
-- **Causa:** El puerto predeterminado (ej. 3000) está ocupado por otra aplicación.
+- **Causa:** el script `dev/start/serve/preview` no existe, el sitio no tiene `index.html`, el puerto elegido por el proyecto está ocupado, o el script fue rechazado por seguridad.
 - **Solución:** 
-  1. Cierra otros servidores locales de desarrollo que tengas corriendo en tu máquina.
-  2. Para verificar qué proceso está ocupando el puerto, abre una terminal y corre:
+  1. Revisa el output reciente mostrado por LemonWoo Agent.
+  2. Cierra otros servidores locales de desarrollo que tengas corriendo en tu máquina.
+  3. Para verificar qué proceso está ocupando un puerto, abre una terminal y corre:
      ```bash
      lsof -i :3000
      ```
      Si hay un proceso, puedes matarlo con `kill -9 <PID>`.
+
+### El autocompletado Tab no aparece
+- **Causa:** falta API key, el archivo no pertenece al workspace, el archivo es sensible/excluido, el lenguaje está ignorado o todavía no pasó el debounce de 300ms.
+- **Solución:** conecta DeepSeek, abre una carpeta de proyecto, usa un archivo de código normal dentro del workspace y espera una pausa breve mientras escribes.
 
 ### El streaming se corta o no aparece incremental
 - **Causa:** red inestable o stream no disponible temporalmente.

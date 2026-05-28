@@ -13,9 +13,10 @@ LemonWoo v1 se enfoca en resolver un único problema excepcionalmente bien: perm
 ## Qué SÍ entra en V1
 
 - **Interfaz de Agente única**: Panel lateral integrado tipo chat que interactúa con el espacio de trabajo actual.
-- **Modelo de Lenguaje único**: Integración directa y optimizada con DeepSeek Coder/Chat.
+- **Modelo de Lenguaje único**: Integración directa y optimizada con DeepSeek mediante rutas internas Pro/Flash invisibles para el usuario.
 - **Esquema BYOK**: Carga y almacenamiento local seguro de la API key provista por el usuario.
-- **Acciones Locales**: Lectura de archivos, escritura de archivos, ejecución de comandos y aplicación de diffs controlados.
+- **Acciones Locales**: Lectura de contexto, propuesta/aplicación segura de diffs, preview local, TestGate y ciclo de corrección.
+- **Autocompletado nativo**: Inline completion con DeepSeek Flash, debounce/cancelación y exclusión de archivos sensibles.
 - **Notificaciones básicas y Stop**: Control sobre la ejecución del agente en tiempo real.
 - **Distribución macOS Local**: Generación de un `.app` y un `.dmg` firmados de manera ad-hoc listos para ejecutar.
 

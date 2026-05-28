@@ -15,7 +15,8 @@
  *
  * What this client is NOT:
  *   - No Anthropic endpoint compatibility (v1 excludes it).
- *   - No FIM beta. Tab is handled at a higher layer (Continue + Flash).
+ *   - No FIM beta. Tab is handled by the LemonWoo extension's native
+ *     inline completion provider using Flash.
  *   - No tool calls / MCP plumbing in v1 — the harness owns that.
  *   - No persistent state. The only cache is an in-memory `/models` TTL.
  */

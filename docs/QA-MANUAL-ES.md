@@ -23,7 +23,7 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 
 ## 2. Configuración Inicial y Panel del Agente
 
-1. **Apertura automática**: Al abrir la aplicación, confirma que se despliega automáticamente el panel lateral de **LemonWoo Agent** (normalmente a la derecha o izquierda de la pantalla).
+1. **Apertura automática**: Al abrir la aplicación, confirma que aparece automáticamente la vista **LemonWoo Agent** como superficie principal.
 2. **BYOK (DeepSeek Key)**:
    - En el panel del agente verás un campo para ingresar tu API key de DeepSeek.
    - Pega tu clave de DeepSeek (debe comenzar con `sk-`).
@@ -46,18 +46,18 @@ Esta guía detalla los pasos para probar LemonWoo IDE manualmente como si fueras
 3. **Solicitar una modificación**:
    - Pídele al agente: `"Modifica el archivo index.html para agregar un título destacado que diga 'Hola LemonWoo'"`.
    - Espera a que termine de procesar.
-   - Debería aparecer una visualización de **Diff** mostrando las líneas agregadas en verde y las eliminadas en rojo.
-   - Haz clic en **Apply** (Aplicar) y verifica que los cambios realmente se escribieron en tu archivo local.
+   - Debería aparecer una propuesta de **diff**.
+   - Haz clic en **Aplicar diff** y verifica que los cambios realmente se escribieron en tu archivo local.
 
 ---
 
 ## 4. Servidor de Vista Previa (Local Preview Server)
 
 1. **Levantar Preview**:
-   - En el panel de control del agente o en los comandos rápidos, selecciona **Start Preview** (o pídele al agente *"levanta la vista previa de este sitio"*).
-   - Confirma que se abre una pestaña interna o ventana de navegador apuntando a un puerto local (por ejemplo `http://localhost:3000`).
+   - Pídele al agente: *"quiero ver la página en una URL, levantá un servidor local"*.
+   - Confirma que el panel muestra una acción local verificada con URL concreta (por ejemplo `http://localhost:3000` o el puerto que detecte el proyecto).
 2. **Detener Servidor**:
-   - Haz clic en el botón **Stop Preview** (Detener).
+   - Haz clic en el botón **Detener servidor**.
    - Intenta recargar la página en tu navegador para verificar que el servidor local se ha apagado correctamente.
 
 ---
@@ -125,4 +125,7 @@ Recorre el editor y los menús para confirmar que no se muestran característica
    - Desconecta la API key (haz clic en `Desconectar` o borra la clave).
    - Abre un archivo de código y escribe. No debe aparecer ninguna sugerencia ni realizarse ninguna llamada a la red.
 4. **Prueba de Exclusión**:
-   - Confirma que no se generan sugerencias de autocompletado en archivos ubicados dentro de directorios excluidos (como `node_modules/`, `.git/` o `dist/`), ni en archivos gigantescos mayores a 1MB.
+   - Confirma que no se generan sugerencias de autocompletado en archivos ubicados dentro de directorios excluidos (como `node_modules/`, `.git/` o `dist/`), archivos sensibles (`.env`, credenciales, claves/certificados, `.aws`, `.ssh`, `.docker/config.json`, kubeconfig), ni en archivos gigantescos mayores a 1MB.
+5. **Prueba de desconexión de key**:
+   - Desconectá la API key.
+   - Confirmá que el autocompletado deja de llamar a DeepSeek y que las sugerencias pendientes se cancelan.

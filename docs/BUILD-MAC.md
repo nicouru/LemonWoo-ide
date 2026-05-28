@@ -29,4 +29,15 @@ pnpm package:dmg
 
 # Run all checks, tests, build, and package the DMG in sequence
 pnpm release:check
+
+# Run the release-candidate validation gate
+pnpm rc:check
+
+# Write local release-candidate evidence to dist/RC-REPORT.md
+pnpm rc:report
 ```
+
+## Notes
+
+- `pnpm rc:check` treats `pnpm smoke:agent:live` exit `78` as an expected external skip when `DEEPSEEK_API_KEY` is absent.
+- `pnpm rc:report` writes local evidence under `dist/`; `docs/RC-REPORT.md` is only the public template.

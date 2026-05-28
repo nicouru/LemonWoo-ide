@@ -1,10 +1,17 @@
 # UPSTREAMS
 
-## Planned v1 upstreams
+## v1 upstreams actually used
 
 - Code-OSS / VSCodium as desktop base.
-- OpenCode SDK for agent runtime integration.
-- Continue integration for optional write/tab path.
+- DeepSeek API via OpenAI-compatible Chat Completions.
+- Native VS Code extension APIs for agent panel, inline completion, workspace edits, diagnostics, and SecretStorage.
+- Local Node.js packages in this monorepo for DeepSeek routing, agent runtime fallback, and TestGate.
+
+## Deferred upstreams
+
+- OpenCode SDK remains a documented spike path, not the default v1 runtime.
+- Continue is not bundled in v1; Tab completion is implemented natively in `lemonwoo-ai` using DeepSeek Flash.
+- MCP, browser agents, semantic indexers, and multi-agent harnesses remain v1.1+ research only.
 
 ## OpenCode + DeepSeek spike
 

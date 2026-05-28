@@ -2,12 +2,11 @@
 
 ## Current stage — 2026-05-28
 
-LemonWoo is now in **v1 release-candidate hardening**.
+LemonWoo is now in **v1 release-candidate validation**.
 
 Repository state:
 
-- `main` is stable through public release guardrails (`0bb7c42`).
-- The latest implementation lives in PR #6 / `feature/live-deepseek-agent-ux-v1` and is mergeable.
+- `main` includes the merged RC distribution hardening and native Flash Tab completion work (`7fed966`).
 - Local working tree is clean except `.serena/`, which is intentionally untracked.
 
 Compared with the original LemonWoo specification:
@@ -16,8 +15,8 @@ Compared with the original LemonWoo specification:
 | --- | --- | --- |
 | Standalone macOS app, not VS Code extension | Done | `dist/LemonWoo.app` is generated from repacked VSCodium and smoke-tested. |
 | LemonWoo branding and isolated app identity | Done | Bundle id, executable, app name, data folder, helpers, product metadata, and ad-hoc signing are patched. |
-| Single agent window as primary surface | Done in PR #6 | Strict `smoke:bundle` now requires the front window to be `LemonWoo Agent`; `Welcome` is no longer accepted. |
-| One DeepSeek API key, BYOK | Done in PR #6 | Key is validated before `SecretStorage` write; invalid/network/rate-limit states are surfaced without logging the key. |
+| Single agent window as primary surface | Done | Strict `smoke:bundle` now requires the front window to be `LemonWoo Agent`; `Welcome` is no longer accepted. |
+| One DeepSeek API key, BYOK | Done | Key is validated before `SecretStorage` write; invalid/network/rate-limit states are surfaced without logging the key. |
 | Automatic Pro/Flash routing, no model picker | Done | Router keeps `tab`/`inline-edit`/`small-write` on Flash and agent/refactor/debug/verify on Pro. UI does not expose model/provider selection. |
 | Agent can program locally | Implemented as v1 fallback | `runAgentTask` is a single-shot DeepSeek call with preassembled local context, streaming, diff proposal, apply, TestGate, and fix loop. It is not dynamic tool-calling. |
 | Safe diff preview/apply | Done | Multi-file unified diffs, new files, path traversal/.git guards, hunk-context validation, and multiple-diff rejection are covered. |
@@ -35,7 +34,7 @@ Current stage summary:
 - **Agent programming loop:** implemented and tested with mocks/fixtures.
 - **Live API proof:** pending `DEEPSEEK_API_KEY` run.
 - **Public/release docs:** ready.
-- **Next decision:** merge PR #6 to `main`, then run `pnpm release:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available.
+- **Next decision:** run `pnpm rc:check` and `pnpm smoke:agent:live` with a real DeepSeek key when available, then decide whether to tag the first public v1 RC.
 
 Do not start v1.1 work yet. The next meaningful work is validation and stabilization of this v1 release candidate.
 
@@ -48,7 +47,8 @@ Do not start v1.1 work yet. The next meaningful work is validation and stabiliza
 - Added reproducible RC reporting:
   - `scripts/write-rc-report.mjs`
   - `pnpm rc:report`
-  - Generates `docs/RC-REPORT.md` with git metadata, version, artifact paths, DMG SHA256, and last RC-check summary.
+  - Generates local `dist/RC-REPORT.md` with git metadata, version, artifact paths, DMG SHA256, and last RC-check summary.
+  - Keeps `docs/RC-REPORT.md` as the stable public template.
 - Hardened packaging:
   - `scripts/package-dmg.sh` now generates `dist/LemonWoo-<version>-mac-<arch>.dmg`.
   - Writes adjacent checksum `*.dmg.sha256`.
@@ -232,7 +232,7 @@ Result (2026-05-28):
 - `dist/LemonWoo.app` rebuilt and smoke-launched with `LemonWoo Agent` window.
 - `dist/LemonWoo-0.1.0-mac-arm64.dmg` packaged successfully.
 
-## 2026-05-28 — PR #4 audit fixes
+## 2026-05-28 — Agent loop audit fixes
 
 - Editor context: `editorTracking.ts` + explicit editor passed to `gatherAgentContext` (webview focus safe).
 - Repo tree: `repoFiles.ts` keeps fixed workspace root for paths like `src/sum.ts`.
@@ -286,10 +286,11 @@ pnpm release:check
 
 - Implemented native `vscode.languages.registerInlineCompletionItemProvider` in `lemonwoo-ai` extension, registered on startup.
 - Integrated with DeepSeek Flash for high-speed autocomplete ghost text.
-- Reuses validated API key stored in `SecretStorage`.
+- Reuses the validated API key stored in `SecretStorage`, with cached `DeepSeekClient` reuse per key.
 - Slices context safely (prefix 3000 chars, suffix 1500 chars).
-- Enforces size limit (< 1MB) and folder exclusions (`.git`, `node_modules`, `dist`, `build`, `out`).
+- Enforces size limit (< 1MB), folder exclusions (`.git`, `node_modules`, `dist`, `build`, `out`), and sensitive-file exclusions (`.env`, credentials, SSH/AWS/Docker/kubeconfig/service-account files, key/cert formats).
 - Implemented real abort/debounce cancellation using `AbortController` and VS Code's `CancellationToken`.
+- Resets inline completion state and aborts in-flight requests when the user disconnects the API key.
 - Protects against key leakage by running `redactSecrets` on errors.
 - Added comprehensive unit and integration tests covering context slice, debounce/abort, secret redaction, and error safety.
 
@@ -307,3 +308,8 @@ bash scripts/verify-public-readiness.sh
 bash scripts/verify-release-artifacts.sh
 pnpm smoke:agent:live   # SKIP (exit 78) without DEEPSEEK_API_KEY
 ```
+
+Result:
+
+- Native inline completion branch was merged to `main`.
+- `lemonwoo-ai` extension suite: 47 tests passed after the final hardening pass.

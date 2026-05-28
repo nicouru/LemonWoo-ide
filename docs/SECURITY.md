@@ -6,4 +6,6 @@ LemonWoo v1 security defaults:
 - No key persistence in plaintext files.
 - Diff apply validates paths are inside workspace.
 - `.git/` edits are blocked.
-- Destructive shell commands require explicit confirmation in the agent flow.
+- Local preview startup rejects dangerous script commands.
+- TestGate runs project test scripts as explicit verification actions.
+- Native Tab completion excludes credential-like files and non-workspace/non-file documents before any DeepSeek request.

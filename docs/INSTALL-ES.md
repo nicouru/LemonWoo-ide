@@ -13,3 +13,7 @@
    - Pegar una API key propia cuando LemonWoo lo solicite.
    - LemonWoo no incluye llaves embebidas ni muestra el valor de tu key en logs de release.
 6. Escribirle al agente en el cuadro principal.
+7. Autocompletado Tab:
+   - Con la key conectada, abrí un archivo de código dentro del workspace.
+   - LemonWoo puede mostrar sugerencias inline con DeepSeek Flash después de una pausa breve.
+   - La sugerencia se acepta con Tab como ghost text nativo del editor.
