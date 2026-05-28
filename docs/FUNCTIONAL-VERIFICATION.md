@@ -294,16 +294,22 @@ Result:
 ## OpenCode runtime spike
 
 ```bash
-pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs
+pnpm opencode:spike
 ```
 
-Result:
+Structured checks (see [UPSTREAMS.md](./UPSTREAMS.md), [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md)):
 
-```text
-OpenCode spike failed: Error: spawn opencode ENOENT
-```
+| Check | Typical result (no shell key) |
+| --- | --- |
+| `SDK_IMPORT` | PASS |
+| `CLI_AVAILABLE` | PASS when `opencode-ai` devDependency installed or `opencode` on PATH |
+| `DEEPSEEK_CONFIG` | SKIP — `DEEPSEEK_API_KEY` not in shell (expected when key is only in LemonWoo.app SecretStorage) |
+| `SESSION_CREATE` | PASS when CLI available |
+| `SIMPLE_PROMPT` | SKIP without shell key |
+| `TOOL_LOOP_CAPABLE` | PASS when server starts |
+| `FIXTURE_MULTI_FILE` | SKIP without live DeepSeek key |
 
-Documented as external environment blocker in `docs/UPSTREAMS.md`.
+Previous failure (`spawn opencode ENOENT`) is documented as a **binary resolution** issue, not an SDK compile failure. Do not claim live DeepSeek PASS without shell key evidence.
 
 ## Manual validation still required in LemonWoo UI
 

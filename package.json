@@ -16,6 +16,7 @@
     "smoke:bundle": "bash scripts/smoke-bundle.sh",
     "smoke:agent:live": "node scripts/live-agent-smoke.mjs",
     "v2:gauntlet": "node scripts/v2-functional-gauntlet.mjs",
+    "opencode:spike": "pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs",
     "build:mac": "bash apps/desktop/build-mac.sh",
     "package:dmg": "bash scripts/package-dmg.sh",
     "release:check": "bash scripts/release-check.sh",
@@ -26,5 +27,8 @@
     "@types/node": "^24.9.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["opencode-ai"]
   }
 }

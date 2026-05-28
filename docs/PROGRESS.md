@@ -1,14 +1,16 @@
 # PROGRESS
 
-## Current stage — v2.0 in-app dogfood hardening
+## Current stage — v2.0 harness upstream re-evaluation
 
-LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. `main` @ `81a9da5` includes PR #18, the repeatable v2 functional gauntlet:
+LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. `main` includes the bounded v2 runtime (`runAgentLoop`) as the **default fallback harness**.
 
-- Bounded multi-step loop (`runAgentLoop`) with internal tools (read_file, search, propose_diff, test_gate, summarize).
-- Max 6 steps, repair via `fixTestOutput`, no MCP, no disk writes from runtime.
-- Extension passes adapters; UI remains single LemonWoo Agent panel.
-- `fixtures/v2-multi-file-agent` + `pnpm v2:gauntlet` prove inspect/search/read/propose/TestGate/repair on a copied workspace.
-- Current branch `feature/v2-dogfood-diff-apply-hardening` was created from a real `LemonWoo.app` dogfood run. It hardens diff application when model-generated unified diffs have stale line numbers but unique matching context.
+Active work on branch `feature/v2-opencode-harness-reevaluation`:
+
+- Re-evaluate **OpenCode** as the preferred upstream harness (per [UPSTREAMS.md](./UPSTREAMS.md)).
+- Structured spike: `pnpm opencode:spike` reports SDK/CLI/DeepSeek/session/tools/fixture checks.
+- Previous `spawn opencode ENOENT` classified as missing CLI binary; mitigation via optional `opencode-ai` devDependency + `OPENCODE_BIN`.
+- Harness comparison matrix: [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md).
+- **No runtime swap** until spike criteria pass; local loop remains default.
 
 ## v1 RC — 2026-05-28
 
