@@ -2,7 +2,12 @@ import * as vscode from "vscode";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
-import { compactRepoTree, packAgentContext, shouldInvokeRg } from "@lemonwoo/agent-runtime";
+import {
+  compactRepoTree,
+  packAgentContext,
+  readApprovedMemoryContext,
+  shouldInvokeRg
+} from "@lemonwoo/agent-runtime";
 import type { AgentContextSnapshot } from "@lemonwoo/agent-runtime";
 import { isTextEditor } from "./editorTracking.js";
 import { listWorkspaceFiles } from "./repoFiles.js";
@@ -161,11 +166,14 @@ export async function gatherAgentContext(
   }
 
   const tree = compactRepoTree(listWorkspaceFiles(workspace));
+  const approvedMemory = readApprovedMemoryContext(workspace);
+  const stableParts = [`Estructura del repo:\n${tree}`];
+  if (approvedMemory) stableParts.push(approvedMemory);
 
   const packed = packAgentContext({
     agentsMd,
     repoRules,
-    stableContext: `Estructura del repo:\n${tree}`,
+    stableContext: stableParts.join("\n\n"),
     volatileParts: {
       activePath: relActive,
       selection,

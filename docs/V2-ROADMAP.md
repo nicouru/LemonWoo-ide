@@ -81,11 +81,10 @@ Goal: remember useful repo/user facts without building a heavy memory product.
 
 Scope:
 
-- Session memory in runtime.
-- Repo-local `.lemonwoo/memory.jsonl` for approved facts only.
-- Read `AGENTS.md` and `.lemonwoo/rules/` as the stable rule layer.
-- Commands to show and clear memory.
-- Automatic secret redaction before any memory write.
+- Repo-local `.lemonwoo/memory.jsonl` for approved facts only (explicit user intent to write; no auto-capture from normal chat).
+- Read `AGENTS.md` and `.lemonwoo/rules/` remain the stable rule layer; approved memory is read-only in `gatherAgentContext` when the file exists.
+- Agent panel messages for record / list / clear (`recordá esto`, `remember this`, `list memory`, `clear memory`).
+- Secret redaction or refusal before any memory write; workspace path safety, line cap, and file size cap.
 
 Out of scope:
 
@@ -93,6 +92,13 @@ Out of scope:
 - Embeddings.
 - Vector search.
 - Cloud sync.
+- Automatic memory writes from agent turns.
+
+Status (2026-05-29):
+
+- **`@lemonwoo/agent-runtime` memory helper** — read/append/clear `.lemonwoo/memory.jsonl` with caps and secret guards.
+- **`gatherAgentContext`** — injects approved memory into stable context when present.
+- **`tryHandleMemoryCommand`** in `lemonwoo-ai` — explicit record/list/clear through the existing agent panel (no new UI).
 
 Definition of done:
 
