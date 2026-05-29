@@ -15,6 +15,7 @@
     "verify:docs": "node scripts/verify-docs-current.mjs",
     "smoke:bundle": "bash scripts/smoke-bundle.sh",
     "smoke:agent:live": "node scripts/live-agent-smoke.mjs",
+    "v2:check": "bash scripts/v2-check.sh",
     "v2:gauntlet": "node scripts/v2-functional-gauntlet.mjs",
     "opencode:spike": "pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs",
     "v2:web-preview-gauntlet": "node scripts/v2-web-preview-gauntlet.mjs",
