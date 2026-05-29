@@ -55,14 +55,16 @@ Web preview gauntlet:
 pnpm v2:web-preview-gauntlet
 ```
 
-What this proves today:
+What this proves today (deterministic, no-key):
 
-- Real `verify_files_exist` and preview start/stop adapters against a temp workspace fixture.
-- Port bind and teardown via `previewAdapter` / `localActions`.
+- Empty temp workspace has no servable project; `creá una web` / `create a web page` skip preview fast-path.
+- `propose_diff` + `planMultiFileApply` accept an apply-ready scaffold diff for `index.html`, `style.css`, `script.js`.
+- Harness writes only inside the temp dir; `verify_files_exist` passes before preview.
+- Real preview start returns localhost HTTP 200; `stop_preview_server` tears down the port.
 
 What it does **not** prove yet:
 
-- Full agent loop generating web files → diff apply → preview URL in-app.
+- Full in-app agent loop with live model generating the diff (no API key in CI).
 
 ## v2.0 agent runtime real (development)
 
