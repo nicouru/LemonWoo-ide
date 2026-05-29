@@ -64,8 +64,10 @@ describe("manifest", () => {
   it("shows serving state and a clickable preview URL", () => {
     const src = readFileSync(resolve(__dirname, "../src/extension.ts"), "utf8");
     expect(src).toContain("\"Sirviendo\"");
+    expect(src).toContain("Preview listo:");
     expect(src).toContain("type: \"serverReady\"");
     expect(src).toContain("<a href=");
+    expect(src).toContain("notifyPreviewReady");
   });
 
   it("focuses DeepSeek key input when key is missing", () => {

@@ -10,6 +10,15 @@ LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Branch `feature/v2-system-capability
 - **Gauntlets**: `pnpm v2:gauntlet`, `pnpm v2:web-preview-gauntlet` (real verify/preview adapters only; not yet agent→diff→preview E2E).
 - **Default runtime**: `runAgentLoop` (unchanged).
 
+## 2026-05-28 — v2 preview UX closeout
+
+Dogfood showed preview server startup worked on disk but the webview stayed ambiguous (`Sirviendo`, URL not prominent). Fix on `feature/v2-preview-ux-closeout`:
+
+- Webview shows **`Preview listo: http://localhost:<port>/`** (or **`Preview ya estaba activo:`** when reused).
+- Status returns to **`Listo`** after URL is known; **`Detener servidor`** stays visible while active.
+- Stop shows **`Servidor detenido.`** and hides the button when no server is running.
+- Real port fallback (e.g. 8001 when 8000 is occupied) is shown in the URL, not an inferred default.
+
 ## v1 RC — 2026-05-28
 
 LemonWoo **v1 RC** is published as tag **`v0.1.0-rc.1`**; in-app live dogfood is **PASS** (operator attestation).

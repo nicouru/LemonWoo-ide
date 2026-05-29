@@ -220,6 +220,20 @@ function mapDeepSeekConnectMessage(status: string): string {
   return "Sin red o DeepSeek no disponible.";
 }
 
+function notifyPreviewReady(
+  panel: vscode.WebviewPanel,
+  preview: { reused: boolean; url: string; logs?: string[] | string }
+): void {
+  const logs = Array.isArray(preview.logs) ? preview.logs.join("\n") : (preview.logs ?? "");
+  panel.webview.postMessage({
+    type: "serverReady",
+    reused: preview.reused,
+    url: preview.url,
+    logs
+  });
+  panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+}
+
 async function handleRun(context: vscode.ExtensionContext, panel: vscode.WebviewPanel, prompt: string) {
   if (!prompt.trim()) {
     panel.webview.postMessage({ type: "error", text: "Escribí una tarea para el agente." });
@@ -235,12 +249,7 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
     try {
       const preview = await ensurePreviewServer(workspace);
-      panel.webview.postMessage({
-        type: "serverReady",
-        reused: preview.reused,
-        url: preview.url,
-        logs: preview.logs.join("\n")
-      });
+      notifyPreviewReady(panel, preview);
     } catch (error) {
       panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
       panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
@@ -392,8 +401,7 @@ async function runAgentCycle(
         lastAgentText = redactSecrets(event.text, [apiKey]);
         if (event.text.startsWith("Servidor listo:")) {
           const url = event.text.replace("Servidor listo:", "").trim();
-          panel.webview.postMessage({ type: "serverReady", reused: false, url, logs: "" });
-          panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
+          notifyPreviewReady(panel, { reused: false, url, logs: "" });
         }
         if (!event.text.startsWith("Servidor listo:")) {
           lastRawDiff = event.text.includes("```diff") ? event.text : null;
@@ -562,6 +570,7 @@ function renderHtml(): string {
     const vscode = acquireVsCodeApi();
     vscode.postMessage({type:'initialized'});
     let last = "";
+    let previewActive = false;
     function run(){
       document.getElementById('retry').style.display='none';
       document.getElementById('fixAgent').style.display='none';
@@ -585,6 +594,11 @@ function renderHtml(): string {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       })[ch]);
     }
+    function renderPreviewBlock(reused, url, logs) {
+      const header = reused ? ('Preview ya estaba activo: ' + url) : ('Preview listo: ' + url);
+      const safeUrl = escapeHtml(url);
+      return escapeHtml(header) + '\\n<a href="' + safeUrl + '">' + safeUrl + '</a>' + (logs ? '\\n\\n' + escapeHtml(logs) : '');
+    }
     window.addEventListener('message', (event) => {
       const m = event.data;
       if (m.type === 'status') {
@@ -593,11 +607,17 @@ function renderHtml(): string {
       }
       if (m.type === 'result') {
         last = m.text;
-        document.getElementById('out').textContent = m.text;
+        if (previewActive) {
+          const previewHtml = document.getElementById('out').innerHTML;
+          document.getElementById('out').innerHTML = previewHtml + '\\n\\n' + escapeHtml(m.text);
+        } else {
+          document.getElementById('out').textContent = m.text;
+        }
         document.getElementById('apply').style.display = m.hasDiff ? 'inline-block' : 'none';
         document.getElementById('tests').style.display = 'inline-block';
       }
       if (m.type === 'stream') {
+        if (previewActive) return;
         last = m.text;
         document.getElementById('out').textContent = m.text;
         document.getElementById('apply').style.display = 'none';
@@ -607,14 +627,16 @@ function renderHtml(): string {
         document.getElementById('out').textContent = (prev ? prev + '\\n' : '') + m.text;
       }
       if (m.type === 'serverReady') {
-        const header = m.reused ? 'Servidor ya activo.' : 'Servidor iniciado.';
-        const safeUrl = escapeHtml(m.url);
-        document.getElementById('out').innerHTML = escapeHtml(header) + '\\nURL: <a href="' + safeUrl + '">' + safeUrl + '</a>\\n\\n' + escapeHtml(m.logs || '');
+        previewActive = true;
+        document.getElementById('state').textContent = 'Listo';
+        document.getElementById('out').innerHTML = renderPreviewBlock(m.reused, m.url, m.logs || '');
         document.getElementById('stopServer').style.display='inline-block';
       }
       if (m.type === 'serverStopped') {
+        previewActive = false;
         document.getElementById('out').textContent = m.text;
         document.getElementById('stopServer').style.display='none';
+        document.getElementById('state').textContent = 'Listo';
       }
       if (m.type === 'error') {
         document.getElementById('out').textContent = 'ERROR: ' + m.text;
