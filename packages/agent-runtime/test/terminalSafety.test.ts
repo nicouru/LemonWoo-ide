@@ -5,6 +5,7 @@ import {
   classifyTerminalCommand,
   classifyPathArguments,
   parseAllowedTerminalCommand,
+  parseConfirmableTerminalCommand,
   parseTerminalTimeoutMs,
   hasShellMetacharacters,
   buildSanitizedTerminalEnv
@@ -61,6 +62,25 @@ describe("classifyTerminalCommand", () => {
     expect(parseAllowedTerminalCommand("rg foo /tmp")).toBeNull();
     expect(parseAllowedTerminalCommand("find .")).toBeNull();
     expect(parseAllowedTerminalCommand("cat x")).toBeNull();
+  });
+
+  it("parses confirmable install/create commands without shell metacharacters", () => {
+    expect(parseConfirmableTerminalCommand("pnpm install")).toEqual({
+      executable: "pnpm",
+      args: ["install"]
+    });
+    expect(parseConfirmableTerminalCommand("npm create vite@latest")).toEqual({
+      executable: "npm",
+      args: ["create", "vite@latest"]
+    });
+    expect(parseConfirmableTerminalCommand("npx create-vite")).toEqual({
+      executable: "npx",
+      args: ["create-vite"]
+    });
+    expect(parseConfirmableTerminalCommand("npm test && rm -rf /")).toBeNull();
+    expect(parseConfirmableTerminalCommand("rm -rf node_modules")).toBeNull();
+    expect(parseConfirmableTerminalCommand("rg foo ../outside")).toBeNull();
+    expect(parseConfirmableTerminalCommand("ls .git")).toBeNull();
   });
 
   it("sanitized env removes DEEPSEEK_API_KEY", () => {

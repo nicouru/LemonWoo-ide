@@ -62,7 +62,7 @@ Internal runtime tools (not MCP):
 
 | Tool | Role |
 | --- | --- |
-| `run_terminal` | Safe workspace commands; destructive/install require confirmation |
+| `run_terminal` | Safe workspace commands; destructive/install require confirmation; confirm-policy commands show in-agent confirm/cancel before spawn |
 | `verify_files_exist` | Disk truth before claiming files were created |
 | `start_preview_server` / `stop_preview_server` | Real localhost URL via hardened `localActions` |
 | `read_file`, `search`, `propose_diff`, `test_gate`, `summarize` | Existing v2 loop tools |
@@ -113,10 +113,16 @@ What this proves (deterministic, no-key):
 - Child process env omits `DEEPSEEK_API_KEY`, `TOKEN`, `SECRET`, `PASSWORD`, and `*_KEY` values seeded in the parent process.
 - Long stdout is truncated; `sk-…` patterns in output are redacted.
 
+Extension confirmation flow (deterministic tests, no-key):
+
+- Confirm-required `run_terminal` stores one pending command and shows compact confirm/cancel UI in the agent webview (`#terminalConfirm`).
+- Cancel clears pending state; confirm runs `runTerminalInWorkspace` with `confirmed: true`, `shell: false`, and sanitized child env via `parseConfirmableTerminalCommand`.
+- Blocked commands never become pending or confirmable.
+- Confirmed output is appended via `info` to `#out` only; the agent loop is not auto-resumed.
+
 What it does **not** prove:
 
 - Full in-app agent loop invoking `run_terminal` with a live model (no API key in CI).
-- User-confirmed execution of install/create commands after explicit approval.
 
 ## v2.0 agent runtime real (development)
 

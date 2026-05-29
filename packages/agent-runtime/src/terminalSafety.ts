@@ -176,6 +176,77 @@ export function classifyTerminalCommand(command: string): {
   };
 }
 
+function splitCommandParts(command: string): string[] {
+  return command.trim().split(/\s+/).filter(Boolean);
+}
+
+function pathArgsAreSafe(pathArgs: string[]): boolean {
+  return classifyPathArguments(pathArgs) !== "block";
+}
+
+/** Conservative parser for user-confirmed commands (confirm policy only). */
+export function parseConfirmableTerminalCommand(command: string): ParsedTerminalCommand | null {
+  const trimmed = command.trim();
+  if (!trimmed) return null;
+  if (hasShellMetacharacters(trimmed)) return null;
+
+  const classification = classifyTerminalCommand(trimmed);
+  if (classification.policy === "block") return null;
+
+  const allowed = parseAllowedTerminalCommand(trimmed);
+  if (allowed) return allowed;
+  if (classification.policy !== "confirm") return null;
+
+  const parts = splitCommandParts(trimmed);
+  const head = parts[0] ?? "";
+
+  if ((head === "npm" || head === "pnpm" || head === "yarn") && parts[1] === "install") {
+    if (!pathArgsAreSafe(parts.slice(2))) return null;
+    return { executable: head, args: parts.slice(1) };
+  }
+
+  if ((head === "npm" || head === "pnpm") && parts[1] === "create") {
+    if (!pathArgsAreSafe(parts.slice(2))) return null;
+    return { executable: head, args: parts.slice(1) };
+  }
+
+  if (head === "pnpm" && parts[1] === "dlx") {
+    if (!pathArgsAreSafe(parts.slice(2))) return null;
+    return { executable: "pnpm", args: parts.slice(1) };
+  }
+
+  if (head === "npx") {
+    if (!pathArgsAreSafe(parts.slice(1))) return null;
+    return { executable: "npx", args: parts.slice(1) };
+  }
+
+  if (head === "find") {
+    const pathLike = parts.slice(1).filter((arg) => !arg.startsWith("-"));
+    if (!pathArgsAreSafe(pathLike)) return null;
+    return { executable: "find", args: parts.slice(1) };
+  }
+
+  if (head === "cat" && parts.length === 2) {
+    if (classifyPathArguments([parts[1]!]) === "block") return null;
+    return { executable: "cat", args: [parts[1]!] };
+  }
+
+  if (/^ls/.test(trimmed) && matchesLsAllowPattern(trimmed)) {
+    const pathArgs = lsPathArguments(parts);
+    if (pathArgs.some(isAbsolutePathArg)) {
+      if (!pathArgsAreSafe(pathArgs)) return null;
+      return { executable: "ls", args: parts.slice(1) };
+    }
+  }
+
+  if (/^rg\s/.test(trimmed)) {
+    if (!pathArgsAreSafe(rgPathArguments(parts))) return null;
+    return { executable: "rg", args: parts.slice(1) };
+  }
+
+  return null;
+}
+
 export function parseAllowedTerminalCommand(command: string): ParsedTerminalCommand | null {
   const trimmed = command.trim();
   if (hasShellMetacharacters(trimmed)) return null;

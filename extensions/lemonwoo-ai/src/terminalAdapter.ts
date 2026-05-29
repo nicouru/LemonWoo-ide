@@ -3,6 +3,7 @@ import {
   buildSanitizedTerminalEnv,
   classifyTerminalCommand,
   parseAllowedTerminalCommand,
+  parseConfirmableTerminalCommand,
   type TerminalRunInput,
   type TerminalRunResult
 } from "@lemonwoo/agent-runtime";
@@ -49,7 +50,8 @@ export async function runTerminalInWorkspace(
       warning: classification.reason
     };
   }
-  if (classification.policy === "confirm") {
+
+  if (!input.confirmed && classification.policy === "confirm") {
     return {
       ok: false,
       command,
@@ -62,17 +64,21 @@ export async function runTerminalInWorkspace(
     };
   }
 
-  const parsed = parseAllowedTerminalCommand(command);
+  const parsed = input.confirmed
+    ? parseConfirmableTerminalCommand(command)
+    : parseAllowedTerminalCommand(command);
   if (!parsed) {
     return {
       ok: false,
       command,
       cwd: cwdRel,
-      output: "Command could not be parsed for safe execution.",
+      output: input.confirmed
+        ? "Command could not be parsed for safe confirmed execution."
+        : "Command could not be parsed for safe execution.",
       stdout: "",
       stderr: "",
-      requiresConfirmation: true,
-      warning: "Command requires confirmation."
+      requiresConfirmation: input.confirmed ? false : true,
+      warning: input.confirmed ? undefined : "Command requires confirmation."
     };
   }
 

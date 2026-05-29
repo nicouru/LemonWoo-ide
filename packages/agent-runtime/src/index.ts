@@ -53,6 +53,13 @@ export {
 export { parseToolRequests, serializeToolRequests } from "./toolParse.js";
 export { executeTool } from "./tools.js";
 export { redactToolOutput } from "./redactTool.js";
-export { classifyTerminalCommand, parseTerminalTimeoutMs, parseAllowedTerminalCommand, buildSanitizedTerminalEnv, hasShellMetacharacters } from "./terminalSafety.js";
+export {
+  classifyTerminalCommand,
+  parseTerminalTimeoutMs,
+  parseAllowedTerminalCommand,
+  parseConfirmableTerminalCommand,
+  buildSanitizedTerminalEnv,
+  hasShellMetacharacters
+} from "./terminalSafety.js";
 export type { TerminalCommandPolicy, ParsedTerminalCommand } from "./terminalSafety.js";
 export type { AgentStep, RuntimeLoopState } from "./contracts.js";

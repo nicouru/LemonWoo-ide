@@ -1,6 +1,15 @@
 # PROGRESS
 
-## Current stage — v2.1 context budget guardrails
+## Current stage — v2 terminal confirmation flow
+
+Branch `feature/v2-terminal-confirmation-flow` closes the gap where `run_terminal` returns `requiresConfirmation` but the single LemonWoo Agent webview had no safe approval path:
+
+- **Pending state** — one confirm-policy command stored in extension state when the tool result requires confirmation and `parseConfirmableTerminalCommand` succeeds.
+- **Webview UI** — compact `#terminalConfirm` block with explicit **Ejecutar** / **Cancelar** (no new panel, no settings, no model picker).
+- **Confirmed spawn** — `runTerminalInWorkspace` with `confirmed: true`, conservative parser, `shell: false`, sanitized env; blocked commands never become confirmable.
+- **Output** — concise result appended to agent `#out` via `info`; no `previewBox` changes; no auto-resume of the model after confirmed output.
+
+## v2.1 context budget guardrails
 
 Branch `feature/v2-context-budget-guardrails` adds deterministic context packing to the existing `gatherAgentContext` path without startup indexing:
 
