@@ -48,20 +48,34 @@ export function detectLocalActionIntent(prompt: string): LocalActionIntent {
   return PREVIEW_PATTERNS.some((p) => p.test(prompt)) ? "preview" : "none";
 }
 
-const PREVIEW_CREATE_PATTERNS = [
-  /cre[aá](r|me|á|a)\s+(una\s+)?(p[aá]gina|web|app|sitio|proyecto)/i,
-  /gener[aá]\s+index\.html/i,
-  /hac[eé]me\s+una\s+(p[aá]gina|web|app)/i,
-  /hac[eé]me\s+una\s+p[aá]gina\s+web/i,
+const CREATION_VERB =
+  /(?:\b(?:crea(?:r|me)?|hac(?:er|eme)?|genera(?:r)?|build|create|make)\b|(?:^|\s)creá(?:\s|$)|(?:^|\s)generá(?:\s|$))/i;
+const CREATION_TARGET = /\b(web|p[aá]gina|pagina|page|site|app)\b|index\.html/i;
+
+const PREVIEW_BLOCKED_MIXED_PATTERNS = [
   /modific[aá]|edit[aá]|actualiz[aá]/i,
   /cre[aá].*localhost/i,
   /localhost.*cre[aá]/i
 ];
 
+/** True when the user is asking to create or scaffold a site/app, not only to view one. */
+export function detectCreationIntent(prompt: string): boolean {
+  if (CREATION_VERB.test(prompt) && CREATION_TARGET.test(prompt)) return true;
+  if (/gener[aá]\s+index\.html/i.test(prompt)) return true;
+  if (/hac[eé]me\s+una\s+p[aá]gina\s+web/i.test(prompt)) return true;
+  return false;
+}
+
+export function hasServableProject(workspace: string): boolean {
+  return existsSync(join(workspace, "package.json")) || existsSync(join(workspace, "index.html"));
+}
+
 /** Fast-path preview only when user wants to view an existing servable project. */
-export function shouldUsePreviewFastPath(prompt: string): boolean {
+export function shouldUsePreviewFastPath(prompt: string, workspace?: string): boolean {
+  if (detectCreationIntent(prompt)) return false;
+  if (PREVIEW_BLOCKED_MIXED_PATTERNS.some((p) => p.test(prompt))) return false;
   if (detectLocalActionIntent(prompt) !== "preview") return false;
-  if (PREVIEW_CREATE_PATTERNS.some((p) => p.test(prompt))) return false;
+  if (workspace !== undefined && !hasServableProject(workspace)) return false;
   return true;
 }
 

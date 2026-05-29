@@ -240,8 +240,9 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     return;
   }
 
-  if (shouldUsePreviewFastPath(prompt)) {
-    const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+  if (shouldUsePreviewFastPath(prompt, workspace)) {
     if (!workspace) {
       panel.webview.postMessage({ type: "error", text: "Abrí una carpeta para levantar preview local." });
       return;
@@ -264,7 +265,6 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     return;
   }
 
-  const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (!workspace) {
     panel.webview.postMessage({ type: "error", text: "Abrí una carpeta de proyecto." });
     return;
