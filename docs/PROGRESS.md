@@ -7,7 +7,7 @@ LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Branch `feature/v2-system-capability
 - **SecretStorage bridge** — product key from `deepseek.apiKey`; harness diagnostic uses transient env only; never logged.
 - **Tools**: `run_terminal`, `verify_files_exist`, `start_preview_server`, `stop_preview_server` (plus existing read/search/diff/TestGate).
 - **OpenCode** remains experimental/default off; `LemonWoo: Run Harness Diagnostic` uses SecretStorage when the dev module resolves; packaged app shows unavailable fallback (no crash).
-- **Gauntlets**: `pnpm v2:gauntlet`, `pnpm v2:web-preview-gauntlet` (real verify/preview adapters only; not yet agent→diff→preview E2E).
+- **Gauntlets**: `pnpm v2:gauntlet`, `pnpm v2:web-preview-gauntlet` (deterministic create/apply/verify/preview/stop in temp workspace; no live model).
 - **Default runtime**: `runAgentLoop` (unchanged).
 
 ## 2026-05-28 — v2 empty workspace create/preview routing
