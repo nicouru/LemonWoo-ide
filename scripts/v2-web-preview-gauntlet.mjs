@@ -20,4 +20,4 @@ console.log("\nV2 web preview dogfood gauntlet passed.");
 console.log("- Empty workspace: no servable project; create-web skips preview fast-path.");
 console.log("- Apply-ready diff for index.html, style.css, script.js (harness temp dir only).");
 console.log("- verify_files_exist + real preview start/stop; localhost HTTP 200 then port down.");
-console.log("- No API key, MCP, browser agent, model picker, or auto-apply.");
+console.log("- Keyless gauntlet: no API key, no MCP, no auto-apply; HTTP-only preview check.");
