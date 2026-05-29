@@ -66,6 +66,38 @@ What it does **not** prove yet:
 
 - Full in-app agent loop with live model generating the diff (no API key in CI).
 
+## v2 terminal tool gauntlet (2026-05-28)
+
+Fixture:
+
+- `fixtures/terminal-gauntlet` (offline `npm test` via `node test/run.js`)
+
+Command evidence:
+
+```bash
+pnpm v2:terminal-gauntlet
+```
+
+Result:
+
+```text
+V2 terminal tool gauntlet passed.
+```
+
+What this proves (deterministic, no-key):
+
+- `executeTool({ tool: "run_terminal" })` routes through the extension `runTerminalInWorkspace` adapter (not a mock terminal).
+- Allowed `npm test` runs with `shell: false` in a temp workspace copy; fixture test script passes without network or install.
+- `pnpm install`, `npm create`, and `npx` return `requiresConfirmation` and do not spawn a child process.
+- Traversal (`../`), `.git`, and destructive commands are blocked before spawn; unsafe `cwd` is rejected.
+- Child process env omits `DEEPSEEK_API_KEY`, `TOKEN`, `SECRET`, `PASSWORD`, and `*_KEY` values seeded in the parent process.
+- Long stdout is truncated; `sk-…` patterns in output are redacted.
+
+What it does **not** prove:
+
+- Full in-app agent loop invoking `run_terminal` with a live model (no API key in CI).
+- User-confirmed execution of install/create commands after explicit approval.
+
 ## v2.0 agent runtime real (development)
 
 Automated coverage (`packages/agent-runtime/test/runAgentLoop.test.ts`, `tools.test.ts`):
