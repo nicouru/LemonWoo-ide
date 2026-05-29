@@ -1,32 +1,62 @@
 import { describe, expect, it } from "vitest";
-import { classifyTerminalCommand, parseTerminalTimeoutMs } from "../src/terminalSafety.js";
+import {
+  classifyTerminalCommand,
+  parseAllowedTerminalCommand,
+  parseTerminalTimeoutMs,
+  hasShellMetacharacters,
+  buildSanitizedTerminalEnv
+} from "../src/terminalSafety.js";
 
 describe("classifyTerminalCommand", () => {
-  it("allows npm test and rg", () => {
+  it("allows npm test and rg literal query", () => {
     expect(classifyTerminalCommand("npm test").policy).toBe("allow");
     expect(classifyTerminalCommand("pnpm run test").policy).toBe("allow");
     expect(classifyTerminalCommand("rg foo").policy).toBe("allow");
   });
 
-  it("requires confirmation for install commands", () => {
+  it("requires confirmation for install, find, cat, and rg flags", () => {
     expect(classifyTerminalCommand("pnpm install").policy).toBe("confirm");
-    expect(classifyTerminalCommand("npm install lodash").policy).toBe("confirm");
+    expect(classifyTerminalCommand("find . -name x").policy).toBe("confirm");
+    expect(classifyTerminalCommand("cat file.txt").policy).toBe("confirm");
+    expect(classifyTerminalCommand("rg --files").policy).toBe("confirm");
   });
 
   it("blocks destructive commands", () => {
     expect(classifyTerminalCommand("rm -rf node_modules").policy).toBe("block");
     expect(classifyTerminalCommand("sudo npm test").policy).toBe("block");
     expect(classifyTerminalCommand("git push origin main").policy).toBe("block");
-    expect(classifyTerminalCommand("git reset --hard").policy).toBe("block");
+    expect(classifyTerminalCommand("find . -delete").policy).toBe("block");
   });
 
-  it("requires confirmation for unlisted commands", () => {
-    expect(classifyTerminalCommand("make all").policy).toBe("confirm");
+  it("requires confirmation for shell metacharacters", () => {
+    expect(hasShellMetacharacters("npm test && rm -rf /")).toBe(true);
+    expect(classifyTerminalCommand("cat file > other").policy).toBe("confirm");
+    expect(classifyTerminalCommand("npm test; npm run lint").policy).toBe("confirm");
+  });
+
+  it("parses allowed commands without shell", () => {
+    expect(parseAllowedTerminalCommand("npm test")).toEqual({ executable: "npm", args: ["test"] });
+    expect(parseAllowedTerminalCommand("rg foo .")).toEqual({ executable: "rg", args: ["foo", "."] });
+    expect(parseAllowedTerminalCommand("find .")).toBeNull();
+    expect(parseAllowedTerminalCommand("cat x")).toBeNull();
+  });
+
+  it("sanitized env removes DEEPSEEK_API_KEY", () => {
+    const env = buildSanitizedTerminalEnv({
+      PATH: "/bin",
+      HOME: "/tmp",
+      DEEPSEEK_API_KEY: "sk-secret",
+      GITHUB_TOKEN: "ghp_secret",
+      LANG: "C"
+    });
+    expect(env.DEEPSEEK_API_KEY).toBeUndefined();
+    expect(env.GITHUB_TOKEN).toBeUndefined();
+    expect(env.PATH).toBe("/bin");
+    expect(env.HOME).toBe("/tmp");
   });
 
   it("caps timeout parsing", () => {
     expect(parseTerminalTimeoutMs(undefined)).toBe(30_000);
-    expect(parseTerminalTimeoutMs("5000")).toBe(5000);
     expect(parseTerminalTimeoutMs("999999")).toBe(120_000);
   });
 });

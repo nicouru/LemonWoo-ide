@@ -2,6 +2,11 @@
 
 export type TerminalCommandPolicy = "allow" | "confirm" | "block";
 
+export interface ParsedTerminalCommand {
+  executable: string;
+  args: string[];
+}
+
 const BLOCK_PATTERNS: readonly RegExp[] = [
   /\brm\s+-[a-zA-Z]*f/i,
   /\bsudo\b/i,
@@ -12,6 +17,7 @@ const BLOCK_PATTERNS: readonly RegExp[] = [
   /\bgit\s+clean\b/i,
   /\bcurl\s+\S+\s*\|\s*sh\b/i,
   /\bcurl\s+\S+\s*\|\s*bash\b/i,
+  /\bfind\b[^\n]*\s-delete\b/i,
   /(^|[\s;&|])(\.git\/|\/\.git\b)/i,
   /\.\.\//
 ];
@@ -23,26 +29,28 @@ const CONFIRM_PATTERNS: readonly RegExp[] = [
   /\bnpm\s+create\b/i,
   /\bpnpm\s+create\b/i,
   /\bnpx\s+create-/i,
-  /\bpnpm\s+dlx\s+create-/i
+  /\bpnpm\s+dlx\b/i,
+  /\bnpx\b/i,
+  /^\s*find\s+/i,
+  /^\s*cat\s+/i
 ];
 
-const ALLOW_PATTERNS: readonly RegExp[] = [
-  /^\s*pwd\s*$/,
-  /^\s*ls(\s|$)/i,
-  /^\s*find\s+/i,
-  /^\s*rg\s+/i,
-  /^\s*cat\s+/i,
-  /^\s*npm\s+test\s*$/,
-  /^\s*npm\s+run\s+test(\s|$)/i,
-  /^\s*pnpm\s+test\s*$/,
-  /^\s*pnpm\s+run\s+test(\s|$)/i,
-  /^\s*npm\s+run\s+build\s*$/,
-  /^\s*pnpm\s+run\s+build\s*$/,
-  /^\s*npm\s+run\s+lint\s*$/,
-  /^\s*pnpm\s+run\s+lint\s*$/,
-  /^\s*node\s+-v\s*$/,
-  /^\s*python3\s+-m\s+http\.server\s+\d+\s*$/
+const ALLOW_EXACT: readonly string[] = [
+  "pwd",
+  "npm test",
+  "npm run test",
+  "pnpm test",
+  "pnpm run test",
+  "npm run build",
+  "pnpm run build",
+  "npm run lint",
+  "pnpm run lint",
+  "node -v"
 ];
+
+export function hasShellMetacharacters(command: string): boolean {
+  return /&&|\|\||[;|`]|[<>]|\$\(|\$\{/.test(command);
+}
 
 export function classifyTerminalCommand(command: string): {
   policy: TerminalCommandPolicy;
@@ -59,6 +67,13 @@ export function classifyTerminalCommand(command: string): {
     }
   }
 
+  if (hasShellMetacharacters(trimmed)) {
+    return {
+      policy: "confirm",
+      reason: "Shell composition/redirection requires explicit user confirmation."
+    };
+  }
+
   for (const pattern of CONFIRM_PATTERNS) {
     if (pattern.test(trimmed)) {
       return {
@@ -68,10 +83,27 @@ export function classifyTerminalCommand(command: string): {
     }
   }
 
-  for (const pattern of ALLOW_PATTERNS) {
-    if (pattern.test(trimmed)) {
-      return { policy: "allow" };
-    }
+  if (/^rg\s/.test(trimmed) && /\s--[^\s]/.test(trimmed) && !/^rg\s--\s/.test(trimmed)) {
+    return {
+      policy: "confirm",
+      reason: "rg flags require explicit user confirmation."
+    };
+  }
+
+  if (ALLOW_EXACT.includes(trimmed)) {
+    return { policy: "allow" };
+  }
+
+  if (/^ls(\s+-[\w-]+)*(\s+[\w./-]+)?$/.test(trimmed)) {
+    return { policy: "allow" };
+  }
+
+  if (/^rg\s\S/.test(trimmed) && !/\s--\w/.test(trimmed.replace(/^rg\s--\s/, ""))) {
+    return { policy: "allow" };
+  }
+
+  if (/^python3\s+-m\s+http\.server\s+\d+$/.test(trimmed)) {
+    return { policy: "allow" };
   }
 
   return {
@@ -80,8 +112,67 @@ export function classifyTerminalCommand(command: string): {
   };
 }
 
+export function parseAllowedTerminalCommand(command: string): ParsedTerminalCommand | null {
+  const trimmed = command.trim();
+  if (hasShellMetacharacters(trimmed)) return null;
+  if (classifyTerminalCommand(trimmed).policy !== "allow") return null;
+
+  if (trimmed === "pwd") return { executable: "pwd", args: [] };
+
+  if (/^ls/.test(trimmed)) {
+    return { executable: "ls", args: trimmed.split(/\s+/).slice(1) };
+  }
+
+  if (trimmed === "npm test") return { executable: "npm", args: ["test"] };
+  if (trimmed === "npm run test") return { executable: "npm", args: ["run", "test"] };
+  if (trimmed === "pnpm test") return { executable: "pnpm", args: ["test"] };
+  if (trimmed === "pnpm run test") return { executable: "pnpm", args: ["run", "test"] };
+  if (trimmed === "npm run build") return { executable: "npm", args: ["run", "build"] };
+  if (trimmed === "pnpm run build") return { executable: "pnpm", args: ["run", "build"] };
+  if (trimmed === "npm run lint") return { executable: "npm", args: ["run", "lint"] };
+  if (trimmed === "pnpm run lint") return { executable: "pnpm", args: ["run", "lint"] };
+  if (trimmed === "node -v") return { executable: "node", args: ["-v"] };
+
+  const py = trimmed.match(/^python3\s+-m\s+http\.server\s+(\d+)$/);
+  if (py) return { executable: "python3", args: ["-m", "http.server", py[1]!] };
+
+  if (/^rg\s/.test(trimmed)) {
+    return { executable: "rg", args: trimmed.split(/\s+/).slice(1) };
+  }
+
+  return null;
+}
+
 export function parseTerminalTimeoutMs(raw: string | undefined, defaultMs = 30_000): number {
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) return defaultMs;
   return Math.min(n, 120_000);
+}
+
+/** Build child-process env without secrets (for tests and adapters). */
+export function buildSanitizedTerminalEnv(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const allow = new Set([
+    "PATH",
+    "HOME",
+    "SHELL",
+    "LANG",
+    "LC_ALL",
+    "TMPDIR",
+    "TERM",
+    "USER",
+    "LOGNAME",
+    "NODE_ENV",
+    "SystemRoot",
+    "ComSpec",
+    "PWD"
+  ]);
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (!value) continue;
+    const upper = key.toUpperCase();
+    if (upper.includes("SECRET") || upper.includes("TOKEN") || upper.includes("PASSWORD")) continue;
+    if (upper.includes("API_KEY") || upper.endsWith("_KEY")) continue;
+    if (allow.has(key)) env[key] = value;
+  }
+  return env;
 }

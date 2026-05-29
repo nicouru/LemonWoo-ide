@@ -1,15 +1,15 @@
-import { resolve } from "node:path";
 import { buildPreviewPlan, ensurePreviewServer, stopPreviewServer } from "./localActions.js";
 import type { PreviewToolResult } from "@lemonwoo/agent-runtime";
+import { assertWorkspaceDirectory, resolveWithinWorkspace } from "./workspacePath.js";
 
 export async function startPreviewForWorkspace(
   workspace: string,
   input: { command?: string; port?: string; cwd?: string }
 ): Promise<PreviewToolResult> {
   const cwdRel = (input.cwd ?? ".").trim() || ".";
-  const target = resolve(workspace, cwdRel);
-  if (!target.startsWith(resolve(workspace))) {
-    return { ok: false, output: "Rejected preview cwd outside workspace." };
+  const resolved = assertWorkspaceDirectory(workspace, cwdRel);
+  if (!resolved.ok) {
+    return { ok: false, output: resolved.reason };
   }
 
   try {
@@ -20,8 +20,8 @@ export async function startPreviewForWorkspace(
       };
     }
 
-    await buildPreviewPlan(target);
-    const preview = await ensurePreviewServer(target);
+    await buildPreviewPlan(resolved.abs);
+    const preview = await ensurePreviewServer(resolved.abs);
     const portMatch = preview.url.match(/:(\d+)/);
     return {
       ok: true,
@@ -35,10 +35,15 @@ export async function startPreviewForWorkspace(
   }
 }
 
-export function stopPreviewForWorkspace(workspace: string): PreviewToolResult {
-  const stopped = stopPreviewServer(workspace);
+export function stopPreviewForWorkspace(workspace: string, cwd?: string): PreviewToolResult {
+  const cwdRel = (cwd ?? ".").trim() || ".";
+  const resolved = resolveWithinWorkspace(workspace, cwdRel);
+  if (!resolved.ok) {
+    return { ok: false, output: resolved.reason };
+  }
+  const stopped = stopPreviewServer(resolved.abs);
   return {
     ok: stopped,
-    output: stopped ? "Preview server stopped." : "No active preview server for this workspace."
+    output: stopped ? "Preview server stopped." : "No active preview server for this workspace path."
   };
 }

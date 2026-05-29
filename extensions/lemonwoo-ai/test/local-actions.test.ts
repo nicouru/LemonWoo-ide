@@ -11,6 +11,7 @@ import {
   parseUrlFromOutput,
   redactLogSecrets,
   selectDevScript,
+  shouldUsePreviewFastPath,
   stopAllPreviewServers,
   stopPreviewServer
 } from "../src/localActions.js";
@@ -27,6 +28,13 @@ describe("local action intent", () => {
 
   it("ignores unrelated prompts", () => {
     expect(detectLocalActionIntent("explicame este error de typescript")).toBe("none");
+  });
+
+  it("shouldUsePreviewFastPath blocks create-web prompts", () => {
+    expect(shouldUsePreviewFastPath("haceme una pagina web y levantá localhost")).toBe(false);
+    expect(shouldUsePreviewFastPath("creá index.html y mostrame url")).toBe(false);
+    expect(shouldUsePreviewFastPath("levantá servidor local")).toBe(true);
+    expect(shouldUsePreviewFastPath("quiero ver la página en localhost")).toBe(true);
   });
 
   it("does not hijack casual localhost mentions", () => {

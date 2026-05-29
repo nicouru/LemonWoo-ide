@@ -14,6 +14,7 @@ import { join } from "node:path";
 import {
   detectLocalActionIntent,
   ensurePreviewServer,
+  shouldUsePreviewFastPath,
   stopAllPreviewServers,
   stopPreviewServer
 } from "./localActions.js";
@@ -225,7 +226,7 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     return;
   }
 
-  if (detectLocalActionIntent(prompt) === "preview") {
+  if (shouldUsePreviewFastPath(prompt)) {
     const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspace) {
       panel.webview.postMessage({ type: "error", text: "Abrí una carpeta para levantar preview local." });
@@ -316,7 +317,7 @@ function buildAgentAdapters(
     runTerminal: async (input) => runTerminalInWorkspace(workspace, input, secrets),
     verifyFilesExist: async (paths) => verifyFilesInWorkspace(workspace, paths),
     startPreviewServer: async (input) => startPreviewForWorkspace(workspace, input),
-    stopPreviewServer: async () => stopPreviewForWorkspace(workspace)
+    stopPreviewServer: async (input) => stopPreviewForWorkspace(workspace, input?.cwd)
   };
 }
 

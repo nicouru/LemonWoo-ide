@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { isSafeRelPath } from "@lemonwoo/agent-runtime";
 import type { VerifyFilesResult } from "@lemonwoo/agent-runtime";
+import { resolveWithinWorkspace } from "./workspacePath.js";
+import { existsSync } from "node:fs";
 
 export function verifyFilesInWorkspace(workspace: string, paths: string[]): VerifyFilesResult {
   const present: string[] = [];
@@ -10,11 +10,12 @@ export function verifyFilesInWorkspace(workspace: string, paths: string[]): Veri
   for (const raw of paths) {
     const rel = raw.trim();
     if (!rel) continue;
-    if (!isSafeRelPath(rel)) {
+    const resolved = resolveWithinWorkspace(workspace, rel);
+    if (!resolved.ok) {
       missing.push(`${rel} (rejected path)`);
       continue;
     }
-    if (existsSync(join(workspace, rel))) present.push(rel);
+    if (existsSync(resolved.abs)) present.push(rel);
     else missing.push(rel);
   }
 

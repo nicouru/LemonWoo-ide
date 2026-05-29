@@ -18,7 +18,7 @@ await esbuild.build({
   target: "node20",
   format: "cjs",
   outfile: resolve(extRoot, "dist/extension.cjs"),
-  external: ["vscode"],
+  external: ["vscode", "@lemonwoo/agent-runtime/opencode"],
   sourcemap: true,
   logLevel: "info"
 });

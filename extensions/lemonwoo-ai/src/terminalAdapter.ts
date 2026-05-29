@@ -1,16 +1,18 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve, relative } from "node:path";
+import {
+  buildSanitizedTerminalEnv,
+  classifyTerminalCommand,
+  parseAllowedTerminalCommand,
+  type TerminalRunInput,
+  type TerminalRunResult
+} from "@lemonwoo/agent-runtime";
 import { redactSecrets } from "@lemonwoo/deepseek";
-import type { TerminalRunInput, TerminalRunResult } from "@lemonwoo/agent-runtime";
+import { assertWorkspaceDirectory } from "./workspacePath.js";
 
 const MAX_OUTPUT = 12_000;
 
-function isWithinWorkspace(workspace: string, target: string): boolean {
-  const absWorkspace = resolve(workspace);
-  const absTarget = resolve(target);
-  const rel = relative(absWorkspace, absTarget);
-  return rel === "" || (!rel.startsWith("..") && !absTarget.includes(`${resolve(absWorkspace, ".git")}`));
+export function buildTerminalChildEnv(): NodeJS.ProcessEnv {
+  return buildSanitizedTerminalEnv(process.env);
 }
 
 export async function runTerminalInWorkspace(
@@ -20,26 +22,67 @@ export async function runTerminalInWorkspace(
 ): Promise<TerminalRunResult> {
   const command = input.command.trim();
   const cwdRel = (input.cwd ?? ".").trim() || ".";
-  const cwd = resolve(workspace, cwdRel);
-
-  if (!isWithinWorkspace(workspace, cwd) || !existsSync(cwd)) {
+  const cwdResolved = assertWorkspaceDirectory(workspace, cwdRel);
+  if (!cwdResolved.ok) {
     return {
       ok: false,
       command,
       cwd: cwdRel,
-      output: "Rejected cwd (must stay inside workspace).",
+      output: cwdResolved.reason,
       stdout: "",
       stderr: "",
       requiresConfirmation: false
     };
   }
 
+  const classification = classifyTerminalCommand(command);
+  if (classification.policy === "block") {
+    return {
+      ok: false,
+      command,
+      cwd: cwdRel,
+      output: classification.reason ?? "Command blocked.",
+      stdout: "",
+      stderr: "",
+      requiresConfirmation: false,
+      warning: classification.reason
+    };
+  }
+  if (classification.policy === "confirm") {
+    return {
+      ok: false,
+      command,
+      cwd: cwdRel,
+      output: classification.reason ?? "Command requires confirmation.",
+      stdout: "",
+      stderr: "",
+      requiresConfirmation: true,
+      warning: classification.reason
+    };
+  }
+
+  const parsed = parseAllowedTerminalCommand(command);
+  if (!parsed) {
+    return {
+      ok: false,
+      command,
+      cwd: cwdRel,
+      output: "Command could not be parsed for safe execution.",
+      stdout: "",
+      stderr: "",
+      requiresConfirmation: true,
+      warning: "Command requires confirmation."
+    };
+  }
+
   const timeoutMs = parseTimeout(input.timeoutMs);
+  const childEnv = buildTerminalChildEnv();
+
   return await new Promise((resolvePromise) => {
-    const child = spawn(command, {
-      cwd,
-      shell: true,
-      env: process.env
+    const child = spawn(parsed.executable, parsed.args, {
+      cwd: cwdResolved.abs,
+      shell: false,
+      env: childEnv
     });
     let stdout = "";
     let stderr = "";

@@ -125,7 +125,7 @@ export interface AgentRuntimeAdapters {
   runTerminal?: (input: TerminalRunInput) => Promise<TerminalRunResult>;
   verifyFilesExist?: (paths: string[]) => Promise<VerifyFilesResult>;
   startPreviewServer?: (input: { command?: string; port?: string; cwd?: string; reason?: string }) => Promise<PreviewToolResult>;
-  stopPreviewServer?: () => Promise<PreviewToolResult>;
+  stopPreviewServer?: (input?: { cwd?: string }) => Promise<PreviewToolResult>;
 }
 
 export interface RunAgentLoopInput {

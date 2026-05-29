@@ -1,9 +1,15 @@
 import * as vscode from "vscode";
-import { formatHarnessReport, runOpenCodeHarnessSpike } from "@lemonwoo/agent-runtime/opencode";
 import { withSecretBackedDeepSeekEnv } from "./deepSeekSecrets.js";
 
+async function loadOpenCodeHarnessModule() {
+  return await import("@lemonwoo/agent-runtime/opencode");
+}
+
 export async function runHarnessDiagnostic(context: vscode.ExtensionContext): Promise<string> {
-  const wrapped = await withSecretBackedDeepSeekEnv(context, async () => runOpenCodeHarnessSpike());
+  const wrapped = await withSecretBackedDeepSeekEnv(context, async () => {
+    const { runOpenCodeHarnessSpike } = await loadOpenCodeHarnessModule();
+    return runOpenCodeHarnessSpike();
+  });
   if (wrapped.status === "missing-key") {
     return [
       "LemonWoo Harness Diagnostic",
@@ -16,6 +22,7 @@ export async function runHarnessDiagnostic(context: vscode.ExtensionContext): Pr
   if (wrapped.status === "error") {
     return `LemonWoo Harness Diagnostic\nERROR: ${wrapped.message}`;
   }
+  const { formatHarnessReport } = await loadOpenCodeHarnessModule();
   return formatHarnessReport(wrapped.value);
 }
 

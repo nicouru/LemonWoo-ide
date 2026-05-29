@@ -231,7 +231,9 @@ export async function executeTool(
       if (!adapters.stopPreviewServer) {
         return fail("stop_preview_server", "Preview adapter not available.");
       }
-      const result = await adapters.stopPreviewServer();
+      const result = await adapters.stopPreviewServer({
+        cwd: request.args.cwd
+      });
       const bounded = boundOutput(redactToolOutput(result.output ?? ""), limits.maxToolOutputChars);
       return {
         ok: result.ok,
