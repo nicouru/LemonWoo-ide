@@ -128,7 +128,7 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
     if (toolRequests.length > 0) {
       for (const req of toolRequests) {
         checkAbort(input.signal);
-        yield { type: "tool", tool: req.tool, phase: "start" };
+        yield { type: "tool", tool: req.tool, phase: "start", args: req.args };
         const result = await executeTool(req, toolCtx);
         state.toolResults.push(result);
         state.steps.push({ index: stepIndex, kind: "tool", summary: req.tool });
@@ -136,7 +136,8 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
           type: "tool",
           tool: req.tool,
           phase: "done",
-          summary: result.output.slice(0, 200)
+          summary: result.output.slice(0, 200),
+          args: req.args
         };
         if (result.requiresConfirmation) {
           yield {

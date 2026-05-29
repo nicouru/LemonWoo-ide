@@ -27,18 +27,18 @@ import { runTerminalInWorkspace } from "./terminalAdapter.js";
 import { verifyFilesInWorkspace } from "./fileVerify.js";
 import { startPreviewForWorkspace, stopPreviewForWorkspace } from "./previewAdapter.js";
 import { registerHarnessDiagnosticCommand } from "./harnessDiagnostic.js";
+import {
+  AGENT_BUSY_STATES,
+  formatAgentWarning,
+  toolDoneLine,
+  toolStartStatus,
+  type AgentBusyState
+} from "./toolEventLines.js";
 
 const KEY_NAME = DEEPSEEK_SECRET_KEY;
 const VIEW_TYPE = "lemonwoo.agentView";
 
-type AgentState =
-  | "Pensando"
-  | "Escribiendo"
-  | "Verificando"
-  | "Sirviendo"
-  | "Ejecutando comando"
-  | "Levantando servidor"
-  | "Listo";
+type AgentState = AgentBusyState | "Listo";
 
 let activePanel: vscode.WebviewPanel | undefined;
 let activeAbort: AbortController | undefined;
@@ -373,29 +373,27 @@ async function runAgentCycle(
         panel.webview.postMessage({ type: "status", state: event.phase satisfies AgentState });
       }
       if (event.type === "tool" && event.phase === "start") {
-        if (event.tool === "run_terminal") {
-          panel.webview.postMessage({ type: "status", state: "Ejecutando comando" satisfies AgentState });
-        }
-        if (event.tool === "start_preview_server") {
-          panel.webview.postMessage({ type: "status", state: "Levantando servidor" satisfies AgentState });
+        const state = toolStartStatus(event);
+        if (state) {
+          panel.webview.postMessage({ type: "status", state: state satisfies AgentState });
         }
       }
       if (event.type === "delta") {
         lastStreamed += event.text;
         panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
       }
-      if (event.type === "tool" && event.phase === "done" && event.summary) {
-        lastStreamed += `\n• ${event.tool}: ${event.summary.slice(0, 120)}\n`;
-        panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
+      if (event.type === "tool" && event.phase === "done") {
+        const line = toolDoneLine(event);
+        if (line) {
+          lastStreamed += `\n${line}\n`;
+          panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
+        }
       }
       if (event.type === "warning") {
-        panel.webview.postMessage({ type: "info", text: redactSecrets(event.text, [apiKey]) });
-        if (event.text.includes("requiere confirmación")) {
-          panel.webview.postMessage({
-            type: "info",
-            text: "Comando requiere confirmación — no se ejecutó automáticamente."
-          });
-        }
+        panel.webview.postMessage({
+          type: "info",
+          text: redactSecrets(formatAgentWarning(event.text), [apiKey])
+        });
       }
       if (event.type === "message") {
         lastAgentText = redactSecrets(event.text, [apiKey]);
@@ -612,7 +610,8 @@ function renderHtml(): string {
       const m = event.data;
       if (m.type === 'status') {
         document.getElementById('state').textContent = m.state;
-        document.getElementById('stop').style.display = m.state === 'Pensando' || m.state === 'Escribiendo' || m.state === 'Verificando' ? 'inline-block' : 'none';
+        const busyStates = ${JSON.stringify([...AGENT_BUSY_STATES])};
+        document.getElementById('stop').style.display = busyStates.includes(m.state) ? 'inline-block' : 'none';
       }
       if (m.type === 'result') {
         last = m.text;

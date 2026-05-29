@@ -26,6 +26,7 @@ describe("agent programming loop wiring", () => {
     expect(src).toContain("searchWorkspace:");
     expect(src).toContain("runRg");
     expect(src).toContain('event.type === "tool"');
+    expect(src).toContain("toolEventLines");
     expect(src).not.toContain("modelSelect");
     expect(src).not.toContain("providerSelect");
   });

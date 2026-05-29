@@ -70,7 +70,14 @@ export type AgentRuntimeEvent =
   | { type: "phase"; phase: AgentPhase }
   | { type: "delta"; text: string }
   | { type: "message"; text: string }
-  | { type: "tool"; tool: AgentToolName; phase: "start" | "done"; summary?: string }
+  | {
+      type: "tool";
+      tool: AgentToolName;
+      phase: "start" | "done";
+      summary?: string;
+      /** Tool request args (paths, queries) for user-facing status lines in the extension. */
+      args?: Record<string, string>;
+    }
   | { type: "warning"; text: string }
   | { type: "done"; result: AgentTaskResult };
 
