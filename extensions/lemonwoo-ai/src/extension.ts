@@ -538,6 +538,8 @@ function renderHtml(): string {
     button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; }
     button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
     #stop, #retry, #apply, #tests, #stopServer, #fixAgent { display: none; }
+    #previewBox { display: none; border: 1px solid var(--vscode-panel-border); border-radius: 4px; padding: 10px; white-space: pre-wrap; word-break: break-word; }
+    #previewBox a { color: var(--vscode-textLink-foreground); }
     pre { white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--vscode-panel-border); padding-top: 14px; }
   </style>
 </head>
@@ -564,13 +566,13 @@ function renderHtml(): string {
       <button id="fixAgent" class="secondary" onclick="fixAgent()">Corregir con agente</button>
       <button id="stopServer" class="secondary" onclick="stopServer()">Detener servidor</button>
     </div>
+    <div id="previewBox"></div>
     <pre id="out"></pre>
   </main>
   <script>
     const vscode = acquireVsCodeApi();
     vscode.postMessage({type:'initialized'});
     let last = "";
-    let previewActive = false;
     function run(){
       document.getElementById('retry').style.display='none';
       document.getElementById('fixAgent').style.display='none';
@@ -599,6 +601,13 @@ function renderHtml(): string {
       const safeUrl = escapeHtml(url);
       return escapeHtml(header) + '\\n<a href="' + safeUrl + '">' + safeUrl + '</a>' + (logs ? '\\n\\n' + escapeHtml(logs) : '');
     }
+    function showPreviewBox(reused, url, logs) {
+      const box = document.getElementById('previewBox');
+      box.style.display = 'block';
+      box.innerHTML = renderPreviewBlock(reused, url, logs);
+      document.getElementById('stopServer').style.display = 'inline-block';
+      document.getElementById('state').textContent = 'Listo';
+    }
     window.addEventListener('message', (event) => {
       const m = event.data;
       if (m.type === 'status') {
@@ -607,17 +616,11 @@ function renderHtml(): string {
       }
       if (m.type === 'result') {
         last = m.text;
-        if (previewActive) {
-          const previewHtml = document.getElementById('out').innerHTML;
-          document.getElementById('out').innerHTML = previewHtml + '\\n\\n' + escapeHtml(m.text);
-        } else {
-          document.getElementById('out').textContent = m.text;
-        }
+        document.getElementById('out').textContent = m.text;
         document.getElementById('apply').style.display = m.hasDiff ? 'inline-block' : 'none';
         document.getElementById('tests').style.display = 'inline-block';
       }
       if (m.type === 'stream') {
-        if (previewActive) return;
         last = m.text;
         document.getElementById('out').textContent = m.text;
         document.getElementById('apply').style.display = 'none';
@@ -627,15 +630,13 @@ function renderHtml(): string {
         document.getElementById('out').textContent = (prev ? prev + '\\n' : '') + m.text;
       }
       if (m.type === 'serverReady') {
-        previewActive = true;
-        document.getElementById('state').textContent = 'Listo';
-        document.getElementById('out').innerHTML = renderPreviewBlock(m.reused, m.url, m.logs || '');
-        document.getElementById('stopServer').style.display='inline-block';
+        showPreviewBox(m.reused, m.url, m.logs || '');
       }
       if (m.type === 'serverStopped') {
-        previewActive = false;
-        document.getElementById('out').textContent = m.text;
-        document.getElementById('stopServer').style.display='none';
+        const box = document.getElementById('previewBox');
+        box.style.display = 'block';
+        box.textContent = m.text;
+        document.getElementById('stopServer').style.display = 'none';
         document.getElementById('state').textContent = 'Listo';
       }
       if (m.type === 'error') {
