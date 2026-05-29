@@ -77,6 +77,7 @@ export type AgentRuntimeEvent =
       summary?: string;
       /** Tool request args (paths, queries) for user-facing status lines in the extension. */
       args?: Record<string, string>;
+      requiresConfirmation?: boolean;
     }
   | { type: "warning"; text: string }
   | { type: "done"; result: AgentTaskResult };
@@ -94,6 +95,8 @@ export interface TerminalRunInput {
   cwd?: string;
   timeoutMs?: string;
   reason?: string;
+  /** User explicitly approved a confirm-policy command in the extension UI. */
+  confirmed?: boolean;
 }
 
 export interface TerminalRunResult {

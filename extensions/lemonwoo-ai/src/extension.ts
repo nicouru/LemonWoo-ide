@@ -24,6 +24,13 @@ import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTrac
 import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
 import { DEEPSEEK_SECRET_KEY, getDeepSeekKeyFromSecretStorage } from "./deepSeekSecrets.js";
 import { runTerminalInWorkspace } from "./terminalAdapter.js";
+import {
+  clearPendingTerminalCommand,
+  getPendingTerminalCommand,
+  pendingFromToolArgs,
+  setPendingTerminalCommand,
+  toConfirmedRunInput
+} from "./terminalConfirmation.js";
 import { verifyFilesInWorkspace } from "./fileVerify.js";
 import { startPreviewForWorkspace, stopPreviewForWorkspace } from "./previewAdapter.js";
 import { registerHarnessDiagnosticCommand } from "./harnessDiagnostic.js";
@@ -86,6 +93,7 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     if (activePanel === panel) activePanel = undefined;
     activeAbort?.abort();
     activeAbort = undefined;
+    clearPendingTerminalCommand();
     stopAllPreviewServers();
   });
   panel.webview.onDidReceiveMessage(async (msg) => {
@@ -151,6 +159,12 @@ async function openAgentPanel(context: vscode.ExtensionContext) {
     }
     if (msg.type === "runTestGate") {
       await handleTestGate(panel);
+    }
+    if (msg.type === "confirmTerminal") {
+      await handleConfirmTerminal(context, panel);
+    }
+    if (msg.type === "cancelTerminal") {
+      handleCancelTerminal(panel);
     }
   });
   panel.webview.html = renderHtml();
@@ -342,6 +356,9 @@ async function runAgentCycle(
   activeAbort = new AbortController();
   const signal = activeAbort.signal;
 
+  clearPendingTerminalCommand();
+  panel.webview.postMessage({ type: "terminalConfirmClear" });
+
   lastTestFailed = false;
   lastAgentText = "";
   lastRawDiff = null;
@@ -387,6 +404,22 @@ async function runAgentCycle(
         if (line) {
           lastStreamed += `\n${line}\n`;
           panel.webview.postMessage({ type: "stream", text: redactSecrets(lastStreamed, [apiKey]) });
+        }
+        if (
+          event.tool === "run_terminal" &&
+          event.requiresConfirmation &&
+          event.args
+        ) {
+          const pending = pendingFromToolArgs(event.args);
+          if (pending) {
+            setPendingTerminalCommand(pending);
+            panel.webview.postMessage({
+              type: "terminalConfirm",
+              command: pending.command,
+              cwd: pending.cwd,
+              reason: pending.reason ?? ""
+            });
+          }
         }
       }
       if (event.type === "warning") {
@@ -481,6 +514,59 @@ async function handleApplyDiff(panel: vscode.WebviewPanel, raw: string) {
   panel.webview.postMessage({ type: "applied", touched: applied.touched });
 }
 
+function formatConfirmedTerminalOutput(command: string, result: { ok: boolean; output: string }): string {
+  const status = result.ok ? "listo" : "falló";
+  const body = result.output.trim();
+  if (!body) return `Comando ${status}: ${command}`;
+  const clipped = body.length > 1200 ? `${body.slice(0, 1200)}\n…` : body;
+  return `Comando ${status}: ${command}\n${clipped}`;
+}
+
+function handleCancelTerminal(panel: vscode.WebviewPanel): void {
+  if (!getPendingTerminalCommand()) return;
+  clearPendingTerminalCommand();
+  panel.webview.postMessage({ type: "terminalConfirmClear" });
+  panel.webview.postMessage({ type: "info", text: "Comando cancelado." });
+  panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+}
+
+async function handleConfirmTerminal(
+  context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel
+): Promise<void> {
+  const pending = getPendingTerminalCommand();
+  if (!pending) {
+    panel.webview.postMessage({ type: "error", text: "No hay comando pendiente para confirmar." });
+    return;
+  }
+
+  const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspace) {
+    panel.webview.postMessage({ type: "error", text: "Abrí una carpeta de proyecto." });
+    return;
+  }
+
+  const apiKey = await getApiKey(context);
+  const secrets = apiKey ? [apiKey] : [];
+
+  clearPendingTerminalCommand();
+  panel.webview.postMessage({ type: "terminalConfirmClear" });
+  panel.webview.postMessage({ type: "status", state: "Ejecutando comando" satisfies AgentState });
+
+  try {
+    const result = await runTerminalInWorkspace(workspace, toConfirmedRunInput(pending), secrets);
+    const line = formatConfirmedTerminalOutput(pending.command, result);
+    panel.webview.postMessage({ type: "info", text: redactSecrets(line, secrets) });
+  } catch (error) {
+    panel.webview.postMessage({
+      type: "error",
+      text: redactSecrets(String(error), secrets)
+    });
+  } finally {
+    panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+  }
+}
+
 async function handleTestGate(panel: vscode.WebviewPanel) {
   const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (!workspace) {
@@ -538,6 +624,8 @@ function renderHtml(): string {
     #stop, #retry, #apply, #tests, #stopServer, #fixAgent { display: none; }
     #previewBox { display: none; border: 1px solid var(--vscode-panel-border); border-radius: 4px; padding: 10px; white-space: pre-wrap; word-break: break-word; }
     #previewBox a { color: var(--vscode-textLink-foreground); }
+    #terminalConfirm { display: none; border: 1px solid var(--vscode-panel-border); border-radius: 4px; padding: 10px; }
+    #terminalConfirm pre { margin: 0 0 8px; white-space: pre-wrap; word-break: break-word; font-size: 12px; }
     pre { white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--vscode-panel-border); padding-top: 14px; }
   </style>
 </head>
@@ -565,6 +653,14 @@ function renderHtml(): string {
       <button id="stopServer" class="secondary" onclick="stopServer()">Detener servidor</button>
     </div>
     <div id="previewBox"></div>
+    <div id="terminalConfirm">
+      <p><strong>Confirmar comando</strong></p>
+      <pre id="terminalConfirmCmd"></pre>
+      <div class="row">
+        <button id="terminalConfirmRun" onclick="confirmTerminal()">Ejecutar</button>
+        <button id="terminalConfirmCancel" class="secondary" onclick="cancelTerminal()">Cancelar</button>
+      </div>
+    </div>
     <pre id="out"></pre>
   </main>
   <script>
@@ -583,6 +679,13 @@ function renderHtml(): string {
     function runTestGate(){ vscode.postMessage({type:'runTestGate'}); }
     function fixAgent(){ vscode.postMessage({type:'fixAgent'}); }
     function stopServer(){ vscode.postMessage({type:'stopServer'}); }
+    function confirmTerminal(){ vscode.postMessage({type:'confirmTerminal'}); }
+    function cancelTerminal(){ vscode.postMessage({type:'cancelTerminal'}); }
+    function hideTerminalConfirm(){
+      const box = document.getElementById('terminalConfirm');
+      box.style.display = 'none';
+      document.getElementById('terminalConfirmCmd').textContent = '';
+    }
     function focusKey(){
       setTimeout(() => document.getElementById('key')?.focus(), 0);
     }
@@ -659,6 +762,18 @@ function renderHtml(): string {
       }
       if (m.type === 'applied') {
         document.getElementById('out').textContent += '\\n[diff aplicado: ' + (m.touched || []).join(', ') + ']';
+      }
+      if (m.type === 'terminalConfirm') {
+        const box = document.getElementById('terminalConfirm');
+        const cmd = document.getElementById('terminalConfirmCmd');
+        const lines = [m.command];
+        if (m.cwd && m.cwd !== '.') lines.push('cwd: ' + m.cwd);
+        if (m.reason) lines.push(m.reason);
+        cmd.textContent = lines.join('\\n');
+        box.style.display = 'block';
+      }
+      if (m.type === 'terminalConfirmClear') {
+        hideTerminalConfirm();
       }
     });
   </script>

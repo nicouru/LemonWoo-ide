@@ -137,7 +137,8 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
           tool: req.tool,
           phase: "done",
           summary: result.output.slice(0, 200),
-          args: req.args
+          args: req.args,
+          requiresConfirmation: result.requiresConfirmation
         };
         if (result.requiresConfirmation) {
           yield {
