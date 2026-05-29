@@ -1,4 +1,5 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { PassThrough } from "node:stream";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -164,5 +165,59 @@ describe("server lifecycle", () => {
     expect(stopPreviewServer(ws)).toBe(false);
     rmSync(ws, { recursive: true, force: true });
     stopAllPreviewServers();
+  });
+
+  it("returns real URL on next port when default 8000 is occupied", async () => {
+    const ws = tmpWorkspace("port8001");
+    writeFileSync(join(ws, "index.html"), "<h1>ok</h1>");
+
+    const blocker = createServer((_req, res) => {
+      res.end("blocked");
+    });
+    await new Promise<void>((resolvePromise) => blocker.listen(8000, "127.0.0.1", resolvePromise));
+
+    let chosenPort = 0;
+    const fakeSpawn = (_command: string, args: string[]) => {
+      chosenPort = Number(args[args.length - 1]);
+      expect(chosenPort).toBeGreaterThan(8000);
+      const stdout = new PassThrough();
+      const stderr = new PassThrough();
+      const handlers = new Map<string, ((...args: any[]) => void)[]>();
+      const listener = createServer((_req, res) => res.end("ok"));
+      listener.listen(chosenPort, "127.0.0.1");
+      const child: any = {
+        pid: 4321,
+        exitCode: null,
+        signalCode: null,
+        stdout,
+        stderr,
+        on(event: string, cb: (...args: any[]) => void) {
+          const list = handlers.get(event) ?? [];
+          list.push(cb);
+          handlers.set(event, list);
+          return child;
+        },
+        kill() {
+          listener.close();
+          (handlers.get("exit") ?? []).forEach((h) => h(0));
+          return true;
+        }
+      };
+      queueMicrotask(() => stdout.write(`Serving HTTP on http://localhost:${chosenPort}/\n`));
+      return child;
+    };
+
+    try {
+      const preview = await ensurePreviewServer(ws, {
+        spawnProcess: fakeSpawn as any,
+        startupTimeoutMs: 2000
+      });
+      expect(preview.url).toBe(`http://localhost:${chosenPort}/`);
+      expect(preview.reused).toBe(false);
+    } finally {
+      blocker.close();
+      stopAllPreviewServers();
+      rmSync(ws, { recursive: true, force: true });
+    }
   });
 });

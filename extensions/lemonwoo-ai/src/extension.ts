@@ -220,6 +220,20 @@ function mapDeepSeekConnectMessage(status: string): string {
   return "Sin red o DeepSeek no disponible.";
 }
 
+function notifyPreviewReady(
+  panel: vscode.WebviewPanel,
+  preview: { reused: boolean; url: string; logs?: string[] | string }
+): void {
+  const logs = Array.isArray(preview.logs) ? preview.logs.join("\n") : (preview.logs ?? "");
+  panel.webview.postMessage({
+    type: "serverReady",
+    reused: preview.reused,
+    url: preview.url,
+    logs
+  });
+  panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
+}
+
 async function handleRun(context: vscode.ExtensionContext, panel: vscode.WebviewPanel, prompt: string) {
   if (!prompt.trim()) {
     panel.webview.postMessage({ type: "error", text: "Escribí una tarea para el agente." });
@@ -235,12 +249,7 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
     panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
     try {
       const preview = await ensurePreviewServer(workspace);
-      panel.webview.postMessage({
-        type: "serverReady",
-        reused: preview.reused,
-        url: preview.url,
-        logs: preview.logs.join("\n")
-      });
+      notifyPreviewReady(panel, preview);
     } catch (error) {
       panel.webview.postMessage({ type: "error", text: redactSecrets(String(error)) });
       panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
@@ -392,8 +401,7 @@ async function runAgentCycle(
         lastAgentText = redactSecrets(event.text, [apiKey]);
         if (event.text.startsWith("Servidor listo:")) {
           const url = event.text.replace("Servidor listo:", "").trim();
-          panel.webview.postMessage({ type: "serverReady", reused: false, url, logs: "" });
-          panel.webview.postMessage({ type: "status", state: "Sirviendo" satisfies AgentState });
+          notifyPreviewReady(panel, { reused: false, url, logs: "" });
         }
         if (!event.text.startsWith("Servidor listo:")) {
           lastRawDiff = event.text.includes("```diff") ? event.text : null;
@@ -530,6 +538,8 @@ function renderHtml(): string {
     button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; }
     button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
     #stop, #retry, #apply, #tests, #stopServer, #fixAgent { display: none; }
+    #previewBox { display: none; border: 1px solid var(--vscode-panel-border); border-radius: 4px; padding: 10px; white-space: pre-wrap; word-break: break-word; }
+    #previewBox a { color: var(--vscode-textLink-foreground); }
     pre { white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--vscode-panel-border); padding-top: 14px; }
   </style>
 </head>
@@ -556,6 +566,7 @@ function renderHtml(): string {
       <button id="fixAgent" class="secondary" onclick="fixAgent()">Corregir con agente</button>
       <button id="stopServer" class="secondary" onclick="stopServer()">Detener servidor</button>
     </div>
+    <div id="previewBox"></div>
     <pre id="out"></pre>
   </main>
   <script>
@@ -585,6 +596,18 @@ function renderHtml(): string {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       })[ch]);
     }
+    function renderPreviewBlock(reused, url, logs) {
+      const header = reused ? ('Preview ya estaba activo: ' + url) : ('Preview listo: ' + url);
+      const safeUrl = escapeHtml(url);
+      return escapeHtml(header) + '\\n<a href="' + safeUrl + '">' + safeUrl + '</a>' + (logs ? '\\n\\n' + escapeHtml(logs) : '');
+    }
+    function showPreviewBox(reused, url, logs) {
+      const box = document.getElementById('previewBox');
+      box.style.display = 'block';
+      box.innerHTML = renderPreviewBlock(reused, url, logs);
+      document.getElementById('stopServer').style.display = 'inline-block';
+      document.getElementById('state').textContent = 'Listo';
+    }
     window.addEventListener('message', (event) => {
       const m = event.data;
       if (m.type === 'status') {
@@ -607,14 +630,14 @@ function renderHtml(): string {
         document.getElementById('out').textContent = (prev ? prev + '\\n' : '') + m.text;
       }
       if (m.type === 'serverReady') {
-        const header = m.reused ? 'Servidor ya activo.' : 'Servidor iniciado.';
-        const safeUrl = escapeHtml(m.url);
-        document.getElementById('out').innerHTML = escapeHtml(header) + '\\nURL: <a href="' + safeUrl + '">' + safeUrl + '</a>\\n\\n' + escapeHtml(m.logs || '');
-        document.getElementById('stopServer').style.display='inline-block';
+        showPreviewBox(m.reused, m.url, m.logs || '');
       }
       if (m.type === 'serverStopped') {
-        document.getElementById('out').textContent = m.text;
-        document.getElementById('stopServer').style.display='none';
+        const box = document.getElementById('previewBox');
+        box.style.display = 'block';
+        box.textContent = m.text;
+        document.getElementById('stopServer').style.display = 'none';
+        document.getElementById('state').textContent = 'Listo';
       }
       if (m.type === 'error') {
         document.getElementById('out').textContent = 'ERROR: ' + m.text;

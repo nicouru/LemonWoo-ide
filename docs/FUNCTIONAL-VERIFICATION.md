@@ -8,6 +8,22 @@ This file records command-level evidence for the required v1 vertical slice.
 - Live DeepSeek smoke remains environment-gated by user API key and in-app manual run.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
+- 2026-05-28 preview UX closeout: webview shows `Preview listo: <url>`, returns to `Listo`, and keeps `Detener servidor` in sync with active preview state.
+
+## v2 preview UX closeout (2026-05-28)
+
+Automated coverage (`extensions/lemonwoo-ai/test/preview-ux.test.ts`, `local-actions.test.ts`):
+
+- `ensurePreviewServer` returns `http://localhost:8001/` when port 8000 is occupied.
+- Webview `serverReady` handler renders the real URL and shows `Detener servidor`.
+- `serverStopped` shows `Servidor detenido.` and resets state to `Listo`.
+
+Manual dogfood (expected after fix):
+
+1. Create minimal web via agent diff apply.
+2. Ask to verify and start server.
+3. UI shows exact localhost URL; browser serves workspace HTML.
+4. `Detener servidor` stops the process and clears the button.
 
 ## v2 system capability harness (development)
 
