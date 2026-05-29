@@ -52,6 +52,48 @@ export function hasShellMetacharacters(command: string): boolean {
   return /&&|\|\||[;|`]|[<>]|\$\(|\$\{/.test(command);
 }
 
+function isAbsolutePathArg(arg: string): boolean {
+  return arg.startsWith("/") || /^[A-Za-z]:[\\/]/.test(arg);
+}
+
+function pathSegments(arg: string): string[] {
+  return arg.split(/[/\\]/).filter(Boolean);
+}
+
+export function classifyPathArguments(pathArgs: string[]): TerminalCommandPolicy | null {
+  for (const arg of pathArgs) {
+    if (!arg || arg.startsWith("-")) continue;
+    if (arg.includes("..")) return "block";
+    if (pathSegments(arg).includes(".git")) return "block";
+    if (isAbsolutePathArg(arg)) return "confirm";
+  }
+  return null;
+}
+
+function lsPathArguments(parts: string[]): string[] {
+  return parts.slice(1).filter((arg) => !arg.startsWith("-"));
+}
+
+function rgPathArguments(parts: string[]): string[] {
+  let index = 1;
+  while (index < parts.length && parts[index].startsWith("-") && parts[index] !== "--") {
+    index += 1;
+  }
+  if (parts[index] === "--") index += 1;
+  if (index >= parts.length) return [];
+  return parts.slice(index + 1);
+}
+
+function matchesLsAllowPattern(trimmed: string): boolean {
+  return /^ls(\s+-[\w-]+)*(\s+[\w./-]+)?$/.test(trimmed);
+}
+
+function matchesRgAllowPattern(trimmed: string): boolean {
+  if (!/^rg\s/.test(trimmed)) return false;
+  if (/^rg\s--\s/.test(trimmed)) return true;
+  return !/\s--[^\s]/.test(trimmed);
+}
+
 export function classifyTerminalCommand(command: string): {
   policy: TerminalCommandPolicy;
   reason?: string;
@@ -60,6 +102,8 @@ export function classifyTerminalCommand(command: string): {
   if (!trimmed) {
     return { policy: "block", reason: "Empty command." };
   }
+
+  const parts = trimmed.split(/\s+/);
 
   for (const pattern of BLOCK_PATTERNS) {
     if (pattern.test(trimmed)) {
@@ -94,11 +138,31 @@ export function classifyTerminalCommand(command: string): {
     return { policy: "allow" };
   }
 
-  if (/^ls(\s+-[\w-]+)*(\s+[\w./-]+)?$/.test(trimmed)) {
+  if (matchesLsAllowPattern(trimmed)) {
+    const pathPolicy = classifyPathArguments(lsPathArguments(parts));
+    if (pathPolicy === "block") {
+      return { policy: "block", reason: "Path argument blocked by LemonWoo safety policy." };
+    }
+    if (pathPolicy === "confirm") {
+      return {
+        policy: "confirm",
+        reason: "Absolute path arguments require explicit user confirmation."
+      };
+    }
     return { policy: "allow" };
   }
 
-  if (/^rg\s\S/.test(trimmed) && !/\s--\w/.test(trimmed.replace(/^rg\s--\s/, ""))) {
+  if (matchesRgAllowPattern(trimmed)) {
+    const pathPolicy = classifyPathArguments(rgPathArguments(parts));
+    if (pathPolicy === "block") {
+      return { policy: "block", reason: "Path argument blocked by LemonWoo safety policy." };
+    }
+    if (pathPolicy === "confirm") {
+      return {
+        policy: "confirm",
+        reason: "Absolute path arguments require explicit user confirmation."
+      };
+    }
     return { policy: "allow" };
   }
 

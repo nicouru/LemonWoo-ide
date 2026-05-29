@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   classifyTerminalCommand,
+  classifyPathArguments,
   parseAllowedTerminalCommand,
   parseTerminalTimeoutMs,
   hasShellMetacharacters,
@@ -34,9 +37,28 @@ describe("classifyTerminalCommand", () => {
     expect(classifyTerminalCommand("npm test; npm run lint").policy).toBe("confirm");
   });
 
+  it("blocks or confirms path arguments outside workspace scope", () => {
+    expect(classifyTerminalCommand("ls /Users").policy).toBe("confirm");
+    expect(classifyTerminalCommand("rg foo /tmp").policy).toBe("confirm");
+    expect(classifyTerminalCommand("rg foo ../outside").policy).toBe("block");
+    expect(classifyTerminalCommand("rg foo src").policy).toBe("allow");
+    expect(classifyTerminalCommand("ls src").policy).toBe("allow");
+    expect(classifyTerminalCommand("ls .git").policy).toBe("block");
+    expect(classifyTerminalCommand("rg --files").policy).toBe("confirm");
+  });
+
+  it("classifyPathArguments rejects traversal and .git", () => {
+    expect(classifyPathArguments(["../outside"])).toBe("block");
+    expect(classifyPathArguments([".git"])).toBe("block");
+    expect(classifyPathArguments(["src"])).toBeNull();
+    expect(classifyPathArguments(["/tmp"])).toBe("confirm");
+  });
+
   it("parses allowed commands without shell", () => {
     expect(parseAllowedTerminalCommand("npm test")).toEqual({ executable: "npm", args: ["test"] });
-    expect(parseAllowedTerminalCommand("rg foo .")).toEqual({ executable: "rg", args: ["foo", "."] });
+    expect(parseAllowedTerminalCommand("rg foo src")).toEqual({ executable: "rg", args: ["foo", "src"] });
+    expect(parseAllowedTerminalCommand("ls /Users")).toBeNull();
+    expect(parseAllowedTerminalCommand("rg foo /tmp")).toBeNull();
     expect(parseAllowedTerminalCommand("find .")).toBeNull();
     expect(parseAllowedTerminalCommand("cat x")).toBeNull();
   });

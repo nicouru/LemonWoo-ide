@@ -1,15 +1,32 @@
 import * as vscode from "vscode";
 import { withSecretBackedDeepSeekEnv } from "./deepSeekSecrets.js";
 
-async function loadOpenCodeHarnessModule() {
-  return await import("@lemonwoo/agent-runtime/opencode");
+const PACKAGED_UNAVAILABLE_MESSAGE = [
+  "LemonWoo Harness Diagnostic",
+  "UNAVAILABLE: OpenCode diagnostic is unavailable in packaged LemonWoo.",
+  "Run `pnpm opencode:spike` from the repository for CLI harness checks."
+].join("\n");
+
+type OpenCodeHarnessModule = typeof import("@lemonwoo/agent-runtime/opencode");
+
+export async function loadOpenCodeHarnessModule(): Promise<OpenCodeHarnessModule | null> {
+  try {
+    return await import("@lemonwoo/agent-runtime/opencode");
+  } catch {
+    return null;
+  }
 }
 
-export async function runHarnessDiagnostic(context: vscode.ExtensionContext): Promise<string> {
-  const wrapped = await withSecretBackedDeepSeekEnv(context, async () => {
-    const { runOpenCodeHarnessSpike } = await loadOpenCodeHarnessModule();
-    return runOpenCodeHarnessSpike();
-  });
+export async function runHarnessDiagnostic(
+  context: vscode.ExtensionContext,
+  loadModule: () => Promise<OpenCodeHarnessModule | null> = loadOpenCodeHarnessModule
+): Promise<string> {
+  const mod = await loadModule();
+  if (!mod) {
+    return PACKAGED_UNAVAILABLE_MESSAGE;
+  }
+
+  const wrapped = await withSecretBackedDeepSeekEnv(context, async () => mod.runOpenCodeHarnessSpike());
   if (wrapped.status === "missing-key") {
     return [
       "LemonWoo Harness Diagnostic",
@@ -22,8 +39,7 @@ export async function runHarnessDiagnostic(context: vscode.ExtensionContext): Pr
   if (wrapped.status === "error") {
     return `LemonWoo Harness Diagnostic\nERROR: ${wrapped.message}`;
   }
-  const { formatHarnessReport } = await loadOpenCodeHarnessModule();
-  return formatHarnessReport(wrapped.value);
+  return mod.formatHarnessReport(wrapped.value);
 }
 
 export function registerHarnessDiagnosticCommand(context: vscode.ExtensionContext): void {

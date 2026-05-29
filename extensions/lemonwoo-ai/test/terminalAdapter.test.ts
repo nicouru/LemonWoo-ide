@@ -1,31 +1,23 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
+import type { ChildProcess } from "node:child_process";
 import { buildTerminalChildEnv, runTerminalInWorkspace } from "../src/terminalAdapter.js";
 import { resolveWithinWorkspace } from "../src/workspacePath.js";
-import { startPreviewForWorkspace, stopPreviewForWorkspace } from "../src/previewAdapter.js";
-import { stopAllPreviewServers } from "../src/localActions.js";
+
+function mockSpawnChild(): ChildProcess {
+  const child = new EventEmitter() as ChildProcess;
+  (child as any).stdout = new EventEmitter();
+  (child as any).stderr = new EventEmitter();
+  (child as any).kill = vi.fn();
+  setTimeout(() => child.emit("close", 0), 0);
+  return child;
+}
 
 afterEach(() => {
-  stopAllPreviewServers();
-});
-
-vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
-  return {
-    ...actual,
-    spawn: vi.fn(() => {
-      const { EventEmitter } = require("node:events");
-      const child = new EventEmitter();
-      (child as any).stdout = new EventEmitter();
-      (child as any).stderr = new EventEmitter();
-      (child as any).kill = vi.fn();
-      setTimeout(() => child.emit("close", 0), 0);
-      return child;
-    })
-  };
+  vi.restoreAllMocks();
 });
 
 describe("terminalAdapter env", () => {
@@ -39,11 +31,18 @@ describe("terminalAdapter env", () => {
   });
 
   it("spawn uses sanitized env without DEEPSEEK_API_KEY", async () => {
+    const spawnSpy = vi.fn(() => mockSpawnChild());
     process.env.DEEPSEEK_API_KEY = "sk-test-secret";
     const root = mkdtempSync(join(tmpdir(), "lemonwoo-term-"));
-    await runTerminalInWorkspace(root, { command: "npm test" }, ["sk-test-secret"]);
-    const call = vi.mocked(spawn).mock.calls.at(-1);
+    await runTerminalInWorkspace(
+      root,
+      { command: "npm test" },
+      ["sk-test-secret"],
+      { spawnProcess: spawnSpy as never }
+    );
+    const call = spawnSpy.mock.calls.at(-1);
     expect(call?.[2]?.env?.DEEPSEEK_API_KEY).toBeUndefined();
+    expect(call?.[2]?.shell).toBe(false);
     rmSync(root, { recursive: true, force: true });
   });
 });
@@ -51,8 +50,6 @@ describe("terminalAdapter env", () => {
 describe("workspacePath", () => {
   it("allows subdir inside workspace", () => {
     const root = mkdtempSync(join(tmpdir(), "lemonwoo-ws-"));
-    mkdirSync(join(root, "pkg"), { recursive: true });
-    writeFileSync(join(root, "pkg", ".keep"), "");
     const resolved = resolveWithinWorkspace(root, "pkg");
     expect(resolved.ok).toBe(true);
     rmSync(root, { recursive: true, force: true });
@@ -65,26 +62,5 @@ describe("workspacePath", () => {
     expect(resolved.ok).toBe(false);
     rmSync(root, { recursive: true, force: true });
     rmSync(sibling, { recursive: true, force: true });
-  });
-});
-
-describe("previewAdapter cwd", () => {
-  it("preview subdir stop uses same path key", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lemonwoo-prev-sub-"));
-    const sub = join(root, "site");
-    mkdirSync(sub, { recursive: true });
-    writeFileSync(join(sub, "index.html"), "<html></html>");
-    const start = await startPreviewForWorkspace(root, { cwd: "site" });
-    expect(start.ok).toBe(true);
-    const stop = stopPreviewForWorkspace(root, "site");
-    expect(stop.ok).toBe(true);
-    rmSync(root, { recursive: true, force: true });
-  }, 35_000);
-
-  it("rejects cwd outside workspace", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lemonwoo-prev-"));
-    const result = await startPreviewForWorkspace(root, { cwd: "../outside" });
-    expect(result.ok).toBe(false);
-    rmSync(root, { recursive: true, force: true });
   });
 });

@@ -11,4 +11,4 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-console.log("V2 web preview gauntlet passed (real harness adapters).");
+console.log("V2 web preview gauntlet passed (real verify/preview adapters; not agent→diff→preview E2E).");

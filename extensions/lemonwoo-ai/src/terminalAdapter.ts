@@ -18,7 +18,8 @@ export function buildTerminalChildEnv(): NodeJS.ProcessEnv {
 export async function runTerminalInWorkspace(
   workspace: string,
   input: TerminalRunInput,
-  extraSecrets: string[] = []
+  extraSecrets: string[] = [],
+  opts?: { spawnProcess?: typeof spawn }
 ): Promise<TerminalRunResult> {
   const command = input.command.trim();
   const cwdRel = (input.cwd ?? ".").trim() || ".";
@@ -77,9 +78,10 @@ export async function runTerminalInWorkspace(
 
   const timeoutMs = parseTimeout(input.timeoutMs);
   const childEnv = buildTerminalChildEnv();
+  const spawnProcess = opts?.spawnProcess ?? spawn;
 
   return await new Promise((resolvePromise) => {
-    const child = spawn(parsed.executable, parsed.args, {
+    const child = spawnProcess(parsed.executable, parsed.args, {
       cwd: cwdResolved.abs,
       shell: false,
       env: childEnv

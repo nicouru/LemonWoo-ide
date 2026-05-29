@@ -22,13 +22,22 @@ Internal runtime tools (not MCP):
 | `start_preview_server` / `stop_preview_server` | Real localhost URL via hardened `localActions` |
 | `read_file`, `search`, `propose_diff`, `test_gate`, `summarize` | Existing v2 loop tools |
 
-Command palette diagnostic (experimental): **`LemonWoo: Run Harness Diagnostic`** — OpenCode spike using SecretStorage key; does not replace `runAgentLoop` default.
+Command palette diagnostic (experimental): **`LemonWoo: Run Harness Diagnostic`** — OpenCode spike using SecretStorage key when the dev module is available; in packaged LemonWoo shows a clear unavailable message (run `pnpm opencode:spike` from the repo). Does not replace `runAgentLoop` default.
 
 Web preview gauntlet:
 
 ```bash
 pnpm v2:web-preview-gauntlet
 ```
+
+What this proves today:
+
+- Real `verify_files_exist` and preview start/stop adapters against a temp workspace fixture.
+- Port bind and teardown via `previewAdapter` / `localActions`.
+
+What it does **not** prove yet:
+
+- Full agent loop generating web files → diff apply → preview URL in-app.
 
 ## v2.0 agent runtime real (development)
 
