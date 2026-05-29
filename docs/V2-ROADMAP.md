@@ -49,7 +49,7 @@ Definition of done:
 Status:
 
 - Runtime implementation merged in PR #17.
-- Automated terminal gauntlet added in `fixtures/v2-multi-file-agent` and `pnpm v2:gauntlet`.
+- Deterministic gauntlets: `pnpm v2:check` (functional + web preview + terminal when present).
 - Remaining closeout: repeat the same fixture inside `LemonWoo.app` with the user's DeepSeek key in SecretStorage and terminal-cross-check `npm test` on the opened fixture.
 
 ## v2.1 — Lightweight Context Intelligence

@@ -11,9 +11,18 @@ Primary v1 goal:
 
 This repository intentionally excludes v1.1 features (MCP Hub, multi-agent orchestration, Stripe, persistent semantic memory, browser agents, etc.).
 
-## Current v1 status
+## Current status
 
-`main` contains the v1 release-candidate implementation:
+**v1 RC** is published as tag **`v0.1.0-rc.1`**. Release notes: [docs/RELEASE-NOTES-v0.1.0-rc.md](docs/RELEASE-NOTES-v0.1.0-rc.md).
+
+`main` also includes the bounded **v2** runtime and deterministic harnesses:
+
+- Multi-step `runAgentLoop` with internal tools (read/search/diff/TestGate/terminal/preview/verify).
+- System capability harness and `LemonWoo: Run Harness Diagnostic` (in-app key from SecretStorage).
+- Empty-workspace routing so creation prompts do not hit preview fast-path before a servable project exists.
+- Deterministic gauntlets: `pnpm v2:check` runs functional, web-preview, and terminal harnesses (no live model).
+
+**v1 product surface** (unchanged promise):
 
 - Standalone `LemonWoo.app` build and DMG packaging.
 - Single LemonWoo Agent panel opened on startup.
@@ -24,16 +33,15 @@ This repository intentionally excludes v1.1 features (MCP Hub, multi-agent orche
 - Native inline Tab completion using DeepSeek Flash with debounce, cancellation, sensitive-file exclusions, and cache reset on key disconnect.
 - RC/public release guardrails and reproducible local reports.
 
-Still recommended before tagging a public RC:
+**Live proof split:**
 
-- Optional CLI: `pnpm smoke:agent:live` with `DEEPSEEK_API_KEY` in the shell (SKIP 78 is OK if the key lives only in LemonWoo.app).
-- In-app dogfood recorded in [docs/FUNCTIONAL-VERIFICATION.md](docs/FUNCTIONAL-VERIFICATION.md) (operator attestation 2026-05-28).
+- CLI `pnpm smoke:agent:live` may **SKIP exit 78** when `DEEPSEEK_API_KEY` is not in the shell (expected when the key lives only in LemonWoo.app SecretStorage).
+- In-app dogfood is recorded in [docs/FUNCTIONAL-VERIFICATION.md](docs/FUNCTIONAL-VERIFICATION.md) (operator attestation 2026-05-28).
 - Apple Developer ID signing/notarization remains future work; v1 uses ad-hoc signing.
 
-Release candidate notes (tag pending live proof): [docs/RELEASE-NOTES-v0.1.0-rc.md](docs/RELEASE-NOTES-v0.1.0-rc.md).
+## Verification commands
 
-## Release commands (v1 RC)
-
+- `pnpm v2:check`: deterministic v2 gauntlets (functional, web preview, terminal when present).
 - `pnpm release:check`: tests + build + checks + bundle smoke + DMG packaging.
 - `pnpm verify:docs`: documentation consistency guardrail check (verifies no obsolete references, local user paths, or outdated features exist).
 - `pnpm rc:check`: reproducible RC validation gate (includes scope/public guardrails, doc consistency, and live smoke policy).

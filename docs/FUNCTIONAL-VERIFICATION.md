@@ -26,8 +26,10 @@ Command evidence:
 ```bash
 pnpm --filter @lemonwoo/agent-runtime test
 pnpm --filter lemonwoo-ai test
-pnpm v2:gauntlet
+pnpm v2:check
 ```
+
+(`pnpm v2:check` runs functional, web-preview, and terminal gauntlets; use individual `pnpm v2:*-gauntlet` commands when debugging one harness.)
 
 ## v2 empty workspace create/preview routing (2026-05-28)
 
