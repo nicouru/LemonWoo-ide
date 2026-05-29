@@ -1,6 +1,14 @@
 # PROGRESS
 
-## Current stage — v2 system capability harness
+## Current stage — v2.1 context budget guardrails
+
+Branch `feature/v2-context-budget-guardrails` adds deterministic context packing to the existing `gatherAgentContext` path without startup indexing:
+
+- **`packAgentContext` / `packVolatileContext`** in `@lemonwoo/agent-runtime` — explicit character budgets, priority order (rules → active file/selection → diagnostics → git diff → rg → repo tree), `[truncated]` markers, selection-aware file slicing, secret redaction.
+- **`gatherAgentContext`** in `lemonwoo-ai` delegates to the packer; no embeddings, vector DB, persistent memory, or repo-wide daemon.
+- Tests cover budget caps, selection survival under pressure, truncation markers, and excluded-folder tree behavior.
+
+## 2026-05-28 — v2 system capability harness
 
 LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Branch `feature/v2-system-capability-harness` adds IDE-backed system tools to the bounded v2 runtime:
 

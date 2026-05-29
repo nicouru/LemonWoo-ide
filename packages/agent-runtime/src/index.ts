@@ -1,9 +1,19 @@
 export {
   compactRepoTree,
   buildVolatileContext,
+  packAgentContext,
+  packVolatileContext,
+  truncateWithMarker,
+  sliceActiveFileAroundSelection,
+  redactContextText,
   shouldInvokeRg,
   isExcludedPath,
-  DEFAULT_EXCLUDE_DIRS
+  DEFAULT_EXCLUDE_DIRS,
+  CONTEXT_BUDGETS,
+  TRUNCATION_MARKER,
+  type VolatileContextInput,
+  type PackAgentContextInput,
+  type PackedAgentContext
 } from "./context.js";
 export { LEMONWOO_AGENT_SYSTEM_PROMPT } from "./prompt.js";
 export {
