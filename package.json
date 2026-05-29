@@ -18,6 +18,7 @@
     "v2:gauntlet": "node scripts/v2-functional-gauntlet.mjs",
     "opencode:spike": "pnpm --filter @lemonwoo/agent-runtime build && node scripts/opencode-spike.mjs",
     "v2:web-preview-gauntlet": "node scripts/v2-web-preview-gauntlet.mjs",
+    "v2:terminal-gauntlet": "node scripts/v2-terminal-gauntlet.mjs",
     "build:mac": "bash apps/desktop/build-mac.sh",
     "package:dmg": "bash scripts/package-dmg.sh",
     "release:check": "bash scripts/release-check.sh",
