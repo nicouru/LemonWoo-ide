@@ -9,6 +9,36 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 
+## v2 system capability harness (development)
+
+Product DeepSeek key lives in LemonWoo.app `SecretStorage` (`deepseek.apiKey`). CLI `DEEPSEEK_API_KEY` is optional for terminal smoke only.
+
+Internal runtime tools (not MCP):
+
+| Tool | Role |
+| --- | --- |
+| `run_terminal` | Safe workspace commands; destructive/install require confirmation |
+| `verify_files_exist` | Disk truth before claiming files were created |
+| `start_preview_server` / `stop_preview_server` | Real localhost URL via hardened `localActions` |
+| `read_file`, `search`, `propose_diff`, `test_gate`, `summarize` | Existing v2 loop tools |
+
+Command palette diagnostic (experimental): **`LemonWoo: Run Harness Diagnostic`** — OpenCode spike using SecretStorage key when the dev module is available; in packaged LemonWoo shows a clear unavailable message (run `pnpm opencode:spike` from the repo). Does not replace `runAgentLoop` default.
+
+Web preview gauntlet:
+
+```bash
+pnpm v2:web-preview-gauntlet
+```
+
+What this proves today:
+
+- Real `verify_files_exist` and preview start/stop adapters against a temp workspace fixture.
+- Port bind and teardown via `previewAdapter` / `localActions`.
+
+What it does **not** prove yet:
+
+- Full agent loop generating web files → diff apply → preview URL in-app.
+
 ## v2.0 agent runtime real (development)
 
 Automated coverage (`packages/agent-runtime/test/runAgentLoop.test.ts`, `tools.test.ts`):

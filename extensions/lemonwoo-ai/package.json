@@ -21,6 +21,10 @@
       {
         "command": "lemonwoo.openAgent",
         "title": "LemonWoo: Open Agent"
+      },
+      {
+        "command": "lemonwoo.runHarnessDiagnostic",
+        "title": "LemonWoo: Run Harness Diagnostic"
       }
     ]
   },

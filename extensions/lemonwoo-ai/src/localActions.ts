@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { createServer } from "node:net";
+import { createConnection } from "node:net";
 import { join } from "node:path";
 
 export type LocalActionIntent = "preview" | "none";
@@ -46,6 +46,23 @@ const URL_RE = /(https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/\S*)?)/i;
 
 export function detectLocalActionIntent(prompt: string): LocalActionIntent {
   return PREVIEW_PATTERNS.some((p) => p.test(prompt)) ? "preview" : "none";
+}
+
+const PREVIEW_CREATE_PATTERNS = [
+  /cre[aá](r|me|á|a)\s+(una\s+)?(p[aá]gina|web|app|sitio|proyecto)/i,
+  /gener[aá]\s+index\.html/i,
+  /hac[eé]me\s+una\s+(p[aá]gina|web|app)/i,
+  /hac[eé]me\s+una\s+p[aá]gina\s+web/i,
+  /modific[aá]|edit[aá]|actualiz[aá]/i,
+  /cre[aá].*localhost/i,
+  /localhost.*cre[aá]/i
+];
+
+/** Fast-path preview only when user wants to view an existing servable project. */
+export function shouldUsePreviewFastPath(prompt: string): boolean {
+  if (detectLocalActionIntent(prompt) !== "preview") return false;
+  if (PREVIEW_CREATE_PATTERNS.some((p) => p.test(prompt))) return false;
+  return true;
 }
 
 export function detectPackageManager(workspace: string): Pm {
@@ -245,12 +262,12 @@ async function findOpenPort(start: number): Promise<number> {
 
 async function isPortOccupied(port: number): Promise<boolean> {
   return await new Promise((resolve) => {
-    const srv = createServer();
-    srv.once("error", () => resolve(true));
-    srv.once("listening", () => {
-      srv.close(() => resolve(false));
+    const socket = createConnection({ port, host: "127.0.0.1" });
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
     });
-    srv.listen(port, "127.0.0.1");
+    socket.once("error", () => resolve(false));
   });
 }
 

@@ -138,6 +138,21 @@ export async function* runAgentLoop(input: RunAgentLoopInput): AsyncGenerator<Ag
           phase: "done",
           summary: result.output.slice(0, 200)
         };
+        if (result.requiresConfirmation) {
+          yield {
+            type: "warning",
+            text: `Comando requiere confirmación: ${result.output.slice(0, 400)}`
+          };
+        }
+        if (result.url) {
+          yield { type: "message", text: `Servidor listo: ${result.url}` };
+        }
+        if (req.tool === "verify_files_exist" && result.present?.length) {
+          yield {
+            type: "message",
+            text: `Archivos verificados: ${result.present.join(", ")}`
+          };
+        }
         if (req.tool === "propose_diff" && result.ok && result.hasDiff && result.rawDiff) {
           pendingToolDiff = {
             hasDiff: true,

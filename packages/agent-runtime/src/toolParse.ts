@@ -7,7 +7,11 @@ const ALLOWED_TOOLS = new Set<AgentToolName>([
   "search",
   "propose_diff",
   "test_gate",
-  "summarize"
+  "summarize",
+  "run_terminal",
+  "verify_files_exist",
+  "start_preview_server",
+  "stop_preview_server"
 ]);
 
 export function parseToolRequests(modelText: string): AgentToolRequest[] {

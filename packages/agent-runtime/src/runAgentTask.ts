@@ -13,7 +13,7 @@ import { evaluateDiffProposal } from "./multiDiff.js";
 import type { AgentContextSnapshot, AgentPhase, AgentTaskResult } from "./types.js";
 
 export type { AgentContextSnapshot, AgentPhase, AgentTaskResult, AgentEvent };
-export type { AgentRuntimeAdapters, AgentRuntimeEvent, TestGateStructuredResult } from "./contracts.js";
+export type { AgentRuntimeAdapters, AgentRuntimeEvent, TestGateStructuredResult, TerminalRunInput, TerminalRunResult, VerifyFilesResult, PreviewToolResult } from "./contracts.js";
 export { runAgentLoop } from "./runAgentLoop.js";
 export {
   DEFAULT_RUNTIME_LIMITS,

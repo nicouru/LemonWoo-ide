@@ -34,9 +34,15 @@ export {
   type AgentToolRequest,
   type AgentToolResult,
   type RuntimeLimits,
-  type TestGateStructuredResult
+  type TestGateStructuredResult,
+  type TerminalRunInput,
+  type TerminalRunResult,
+  type VerifyFilesResult,
+  type PreviewToolResult
 } from "./runAgentTask.js";
 export { parseToolRequests, serializeToolRequests } from "./toolParse.js";
 export { executeTool } from "./tools.js";
 export { redactToolOutput } from "./redactTool.js";
+export { classifyTerminalCommand, parseTerminalTimeoutMs, parseAllowedTerminalCommand, buildSanitizedTerminalEnv, hasShellMetacharacters } from "./terminalSafety.js";
+export type { TerminalCommandPolicy, ParsedTerminalCommand } from "./terminalSafety.js";
 export type { AgentStep, RuntimeLoopState } from "./contracts.js";

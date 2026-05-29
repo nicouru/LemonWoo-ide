@@ -1,16 +1,14 @@
 # PROGRESS
 
-## Current stage — v2.0 harness upstream re-evaluation
+## Current stage — v2 system capability harness
 
-LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. `main` includes the bounded v2 runtime (`runAgentLoop`) as the **default fallback harness**.
+LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Branch `feature/v2-system-capability-harness` adds IDE-backed system tools to the bounded v2 runtime:
 
-Active work on branch `feature/v2-opencode-harness-reevaluation`:
-
-- Re-evaluate **OpenCode** as the preferred upstream harness (per [UPSTREAMS.md](./UPSTREAMS.md)).
-- Structured spike: `pnpm opencode:spike` reports SDK/CLI/DeepSeek/session/tools/fixture checks.
-- Previous `spawn opencode ENOENT` classified as missing CLI binary; mitigation via optional `opencode-ai` devDependency + `OPENCODE_BIN`.
-- Harness comparison matrix: [HARNESS-EVALUATION.md](./HARNESS-EVALUATION.md).
-- **No runtime swap** until spike criteria pass; local loop remains default.
+- **SecretStorage bridge** — product key from `deepseek.apiKey`; harness diagnostic uses transient env only; never logged.
+- **Tools**: `run_terminal`, `verify_files_exist`, `start_preview_server`, `stop_preview_server` (plus existing read/search/diff/TestGate).
+- **OpenCode** remains experimental/default off; `LemonWoo: Run Harness Diagnostic` uses SecretStorage when the dev module resolves; packaged app shows unavailable fallback (no crash).
+- **Gauntlets**: `pnpm v2:gauntlet`, `pnpm v2:web-preview-gauntlet` (real verify/preview adapters only; not yet agent→diff→preview E2E).
+- **Default runtime**: `runAgentLoop` (unchanged).
 
 ## v1 RC — 2026-05-28
 
