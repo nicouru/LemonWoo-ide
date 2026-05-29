@@ -10,6 +10,14 @@ LemonWoo **v1 RC** is tagged `v0.1.0-rc.1`. Branch `feature/v2-system-capability
 - **Gauntlets**: `pnpm v2:gauntlet`, `pnpm v2:web-preview-gauntlet` (real verify/preview adapters only; not yet agent→diff→preview E2E).
 - **Default runtime**: `runAgentLoop` (unchanged).
 
+## 2026-05-28 — v2 empty workspace create/preview routing
+
+Dogfood on an empty folder: prompts like `creá una web`, `haceme una página`, or `create a web page` must not hit preview fast-path before `package.json` or `index.html` exist.
+
+- `detectCreationIntent` routes ES/EN scaffold verbs + web/page/site/app targets to the agent loop.
+- `shouldUsePreviewFastPath(prompt, workspace)` requires `hasServableProject` (package.json or index.html) for serve/view intents.
+- Mixed create+preview prompts stay on the agent path; `#previewBox` isolation unchanged.
+
 ## 2026-05-28 — v2 preview UX closeout
 
 Dogfood showed preview server startup worked on disk but the webview stayed ambiguous (`Sirviendo`, URL not prominent). Fix on `feature/v2-preview-ux-closeout`:

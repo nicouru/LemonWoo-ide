@@ -9,6 +9,15 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 correction pass: the LemonWoo agent is now startup-activated and no longer requires the user to discover a command before seeing the primary v1 surface.
 - 2026-05-28 preview/dev-server pass: local preview intent is now executed as a verified local action (server startup, URL detection, stop), not answered as tutorial text.
 - 2026-05-28 preview UX closeout: webview shows `Preview listo: <url>`, returns to `Listo`, and keeps `Detener servidor` in sync with active preview state.
+- 2026-05-28 empty workspace routing: creation prompts (ES/EN) skip preview fast-path until `package.json` or `index.html` exists; `levantá servidor local` still fast-paths when servable files are on disk.
+
+## v2 empty workspace create/preview routing (2026-05-28)
+
+Automated coverage (`extensions/lemonwoo-ai/test/local-actions.test.ts`):
+
+- Empty workspace: `creá una web`, `haceme una pagina web`, `create a web page`, `make an app` → no preview fast-path.
+- Servable workspace (`index.html`): `levantá servidor local`, `quiero ver la página en localhost` → preview fast-path.
+- Mixed create+preview prompts → agent path even when `index.html` exists.
 
 ## v2 preview UX closeout (2026-05-28)
 
@@ -311,6 +320,7 @@ Covered contracts include:
 - TestGate script decision and redaction behavior.
 - Runtime exclusion guard for Anthropic compatibility.
 - Local preview intent detection.
+- Empty-workspace creation intent routing (no preview fast-path without servable files).
 - Script selection priority (`dev` -> `start` -> `serve` -> `preview`).
 - Package manager selection by lockfile.
 - Python static fallback with `index.html`.

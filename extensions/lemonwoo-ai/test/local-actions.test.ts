@@ -6,9 +6,11 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import {
   buildPreviewPlan,
+  detectCreationIntent,
   detectLocalActionIntent,
   detectPackageManager,
   ensurePreviewServer,
+  hasServableProject,
   parseUrlFromOutput,
   redactLogSecrets,
   selectDevScript,
@@ -31,11 +33,42 @@ describe("local action intent", () => {
     expect(detectLocalActionIntent("explicame este error de typescript")).toBe("none");
   });
 
-  it("shouldUsePreviewFastPath blocks create-web prompts", () => {
-    expect(shouldUsePreviewFastPath("haceme una pagina web y levantá localhost")).toBe(false);
-    expect(shouldUsePreviewFastPath("creá index.html y mostrame url")).toBe(false);
-    expect(shouldUsePreviewFastPath("levantá servidor local")).toBe(true);
-    expect(shouldUsePreviewFastPath("quiero ver la página en localhost")).toBe(true);
+  it("detects creation intents (ES/EN)", () => {
+    expect(detectCreationIntent("creá una web")).toBe(true);
+    expect(detectCreationIntent("haceme una página")).toBe(true);
+    expect(detectCreationIntent("create a web page")).toBe(true);
+    expect(detectCreationIntent("make a site")).toBe(true);
+    expect(detectCreationIntent("levantá servidor local")).toBe(false);
+  });
+
+  it("empty workspace creation prompts do not use preview fast-path", () => {
+    const empty = tmpWorkspace("empty-create");
+    expect(hasServableProject(empty)).toBe(false);
+    expect(shouldUsePreviewFastPath("creá una web", empty)).toBe(false);
+    expect(shouldUsePreviewFastPath("haceme una pagina web", empty)).toBe(false);
+    expect(shouldUsePreviewFastPath("create a web page", empty)).toBe(false);
+    expect(shouldUsePreviewFastPath("make an app for my shop", empty)).toBe(false);
+    rmSync(empty, { recursive: true, force: true });
+  });
+
+  it("preview fast-path requires servable project on disk", () => {
+    const empty = tmpWorkspace("empty-preview");
+    expect(shouldUsePreviewFastPath("levantá servidor local", empty)).toBe(false);
+    expect(shouldUsePreviewFastPath("quiero ver la página en localhost", empty)).toBe(false);
+
+    writeFileSync(join(empty, "index.html"), "<h1>ok</h1>");
+    expect(shouldUsePreviewFastPath("levantá servidor local", empty)).toBe(true);
+    expect(shouldUsePreviewFastPath("quiero ver la página en localhost", empty)).toBe(true);
+    rmSync(empty, { recursive: true, force: true });
+  });
+
+  it("shouldUsePreviewFastPath blocks mixed create-and-preview prompts", () => {
+    const ws = tmpWorkspace("mixed");
+    writeFileSync(join(ws, "index.html"), "<h1>ok</h1>");
+    expect(shouldUsePreviewFastPath("haceme una pagina web y levantá localhost", ws)).toBe(false);
+    expect(shouldUsePreviewFastPath("creá index.html y mostrame url", ws)).toBe(false);
+    expect(shouldUsePreviewFastPath("creá una web", ws)).toBe(false);
+    rmSync(ws, { recursive: true, force: true });
   });
 
   it("does not hijack casual localhost mentions", () => {
