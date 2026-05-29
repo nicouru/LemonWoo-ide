@@ -3,7 +3,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "nod
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { listWorkspaceFiles } from "../src/repoFiles.js";
-import { packAgentContext, TRUNCATION_MARKER } from "@lemonwoo/agent-runtime";
+import {
+  appendApprovedMemoryFact,
+  packAgentContext,
+  readApprovedMemoryContext,
+  TRUNCATION_MARKER
+} from "@lemonwoo/agent-runtime";
 
 describe("agentContext", () => {
   it("lists nested files with root-relative paths", () => {
@@ -38,6 +43,24 @@ describe("agentContext", () => {
     const src = readFileSync(resolve(process.cwd(), "src/agentContext.ts"), "utf8");
     expect(src).toContain("packAgentContext");
     expect(src).not.toContain("buildVolatileContext");
+  });
+
+  it("gatherAgentContext wires approved memory into stable context", () => {
+    const src = readFileSync(resolve(process.cwd(), "src/agentContext.ts"), "utf8");
+    expect(src).toContain("readApprovedMemoryContext");
+
+    const root = mkdtempSync(join(tmpdir(), "lemonwoo-ctx-mem-"));
+    appendApprovedMemoryFact(root, "Always run pnpm test before merge.");
+    const memoryBlock = readApprovedMemoryContext(root);
+    const packed = packAgentContext({
+      agentsMd: "",
+      repoRules: "",
+      stableContext: `Estructura del repo:\nsrc/\n\n${memoryBlock}`,
+      volatileParts: {}
+    });
+    expect(packed.stableContext).toContain("Memoria aprobada");
+    expect(packed.stableContext).toContain("pnpm test");
+    rmSync(root, { recursive: true, force: true });
   });
 
   it("packAgentContext keeps selection when diff and rg output are huge", () => {

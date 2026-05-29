@@ -19,6 +19,7 @@ import {
   stopPreviewServer
 } from "./localActions.js";
 import { gatherAgentContext, runRg } from "./agentContext.js";
+import { tryHandleMemoryCommand } from "./memoryCommands.js";
 import { applyMultiFileDiff } from "./multiDiffApply.js";
 import { getPreferredTextEditor, registerTextEditorTracking } from "./editorTracking.js";
 import { registerInlineCompletionProvider, resetInlineCompletionState } from "./inlineCompletion.js";
@@ -281,6 +282,13 @@ async function handleRun(context: vscode.ExtensionContext, panel: vscode.Webview
 
   if (!workspace) {
     panel.webview.postMessage({ type: "error", text: "Abrí una carpeta de proyecto." });
+    return;
+  }
+
+  const memoryCommand = tryHandleMemoryCommand(workspace, prompt);
+  if (memoryCommand.handled) {
+    panel.webview.postMessage({ type: "info", text: memoryCommand.message });
+    panel.webview.postMessage({ type: "status", state: "Listo" satisfies AgentState });
     return;
   }
 

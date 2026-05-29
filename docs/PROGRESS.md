@@ -1,6 +1,16 @@
 # PROGRESS
 
-## Current stage — v2 terminal confirmation flow
+## Current stage — v2.2 minimal approved memory
+
+Branch `feature/v2-minimal-approved-memory` adds the safest slice of repo-local memory:
+
+- **`.lemonwoo/memory.jsonl`** — approved facts only; no auto-write from normal agent chat.
+- **`@lemonwoo/agent-runtime` memory helper** — read/append/clear with workspace path safety, line/file caps, and secret refusal/redaction.
+- **`gatherAgentContext`** — read-only approved memory in stable context when the file exists.
+- **Agent panel commands** — explicit `recordá esto` / `remember this`, `list memory`, `clear memory` via existing webview (no new panel).
+- Out of scope for this slice: embeddings, SQLite, cloud sync, automatic secret capture.
+
+## v2 terminal confirmation flow
 
 Branch `feature/v2-terminal-confirmation-flow` closes the gap where `run_terminal` returns `requiresConfirmation` but the single LemonWoo Agent webview had no safe approval path:
 

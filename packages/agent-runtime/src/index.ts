@@ -54,6 +54,22 @@ export { parseToolRequests, serializeToolRequests } from "./toolParse.js";
 export { executeTool } from "./tools.js";
 export { redactToolOutput } from "./redactTool.js";
 export {
+  MEMORY_REL_PATH,
+  MAX_MEMORY_FACT_CHARS,
+  MAX_MEMORY_LINES,
+  MAX_MEMORY_FILE_BYTES,
+  MAX_MEMORY_CONTEXT_CHARS,
+  resolveMemoryFilePath,
+  sanitizeMemoryFact,
+  readApprovedMemoryFacts,
+  readApprovedMemoryContext,
+  formatApprovedMemoryForContext,
+  appendApprovedMemoryFact,
+  clearApprovedMemory,
+  type MemoryFactRecord,
+  type MemoryPathResult
+} from "./memory.js";
+export {
   classifyTerminalCommand,
   parseTerminalTimeoutMs,
   parseAllowedTerminalCommand,

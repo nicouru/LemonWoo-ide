@@ -493,6 +493,7 @@ Includes:
 - `lastUserTask` for TestGate fix loop.
 - Multi-file diff parse/apply safety (path traversal, `.git/`, new file, hunk mismatch without partial apply).
 - Context exclusions and on-demand `rg` heuristics.
+- Approved repo-local memory (`.lemonwoo/memory.jsonl`): read into stable context, explicit record/list/clear, secret refusal, path safety.
 - Extension wiring for `Corregir con agente`, `runTestGate`, `planMultiFileApply`.
 
 Manual vertical slice:
