@@ -64,6 +64,11 @@ Scope:
 - Respect `.gitignore` and existing sensitive-file exclusions.
 - No embeddings, vector database, or full-repo index at startup.
 
+Status (2026-05-28):
+
+- **Deterministic context budgets** (branch `feature/v2-context-budget-guardrails`): `packAgentContext` / `packVolatileContext` in `@lemonwoo/agent-runtime` with explicit character caps, priority-preserving truncation, predictable large-file slicing, and secret redaction before assembly. Wired into `gatherAgentContext`.
+- Still out of scope for this slice: embeddings, vector DB, persistent memory, repo-wide indexing daemon, LSP symbol summaries.
+
 Definition of done:
 
 - Medium repos receive smaller, more relevant prompts.

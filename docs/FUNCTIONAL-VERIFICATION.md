@@ -11,6 +11,24 @@ This file records command-level evidence for the required v1 vertical slice.
 - 2026-05-28 preview UX closeout: webview shows `Preview listo: <url>`, returns to `Listo`, and keeps `Detener servidor` in sync with active preview state.
 - 2026-05-28 empty workspace routing: creation prompts (ES/EN) skip preview fast-path until `package.json` or `index.html` exists; `levantá servidor local` still fast-paths when servable files are on disk.
 
+## v2.1 context budget guardrails (2026-05-28)
+
+Automated coverage (`packages/agent-runtime/test/context.test.ts`, `extensions/lemonwoo-ai/test/agent-context.test.ts`):
+
+- `packAgentContext` / `packVolatileContext` enforce explicit character budgets on `agentsMd`, `repoRules`, `stableContext`, and `volatileContext`.
+- Priority order preserved: rules → active path/selection → diagnostics → git diff → rg → repo tree.
+- Large active files slice around the selection; git diff and rg output clip with visible `[truncated]`.
+- Secrets redacted via `redactContextText` before context assembly.
+- Excluded folders (`node_modules`, `dist`, etc.) remain excluded from repo tree context.
+
+Command evidence:
+
+```bash
+pnpm --filter @lemonwoo/agent-runtime test
+pnpm --filter lemonwoo-ai test
+pnpm v2:gauntlet
+```
+
 ## v2 empty workspace create/preview routing (2026-05-28)
 
 Automated coverage (`extensions/lemonwoo-ai/test/local-actions.test.ts`):

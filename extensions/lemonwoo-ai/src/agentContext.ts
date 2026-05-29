@@ -2,12 +2,12 @@ import * as vscode from "vscode";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
-import { buildVolatileContext, compactRepoTree, shouldInvokeRg } from "@lemonwoo/agent-runtime";
+import { compactRepoTree, packAgentContext, shouldInvokeRg } from "@lemonwoo/agent-runtime";
 import type { AgentContextSnapshot } from "@lemonwoo/agent-runtime";
 import { isTextEditor } from "./editorTracking.js";
 import { listWorkspaceFiles } from "./repoFiles.js";
 
-const MAX_READ = 6000;
+const MAX_READ = 12_000;
 
 export interface EditorSnapshot {
   relPath: string;
@@ -69,7 +69,7 @@ export function editorToSnapshot(
   return {
     relPath,
     selection: editor.document.getText(editor.selection),
-    fileContent: editor.document.getText().slice(0, 4000),
+    fileContent: editor.document.getText(),
     diagnostics: vscode.languages
       .getDiagnostics(editor.document.uri)
       .map((d) => `${d.severity}:${d.message}`)
@@ -162,20 +162,25 @@ export async function gatherAgentContext(
 
   const tree = compactRepoTree(listWorkspaceFiles(workspace));
 
-  const volatileContext = buildVolatileContext({
-    "Archivo activo": relActive,
-    Selección: selection,
-    "Archivo (truncado)": openFile,
-    Diagnostics: diagnostics,
-    "Git diff": gitDiff,
-    "Búsqueda rg": rgOut
+  const packed = packAgentContext({
+    agentsMd,
+    repoRules,
+    stableContext: `Estructura del repo:\n${tree}`,
+    volatileParts: {
+      activePath: relActive,
+      selection,
+      activeFile: openFile,
+      diagnostics,
+      gitDiff,
+      rgOutput: rgOut
+    }
   });
 
   return {
     userTask,
-    agentsMd,
-    repoRules,
-    stableContext: `Estructura del repo:\n${tree}`,
-    volatileContext
+    agentsMd: packed.agentsMd,
+    repoRules: packed.repoRules,
+    stableContext: packed.stableContext,
+    volatileContext: packed.volatileContext
   };
 }
